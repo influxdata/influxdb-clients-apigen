@@ -1,0 +1,47 @@
+version: "3.6"
+
+services:
+
+  java:
+    build:
+      context: .
+      dockerfile: openapi-generator/Dockerfile
+    volumes:
+      - .m2:/root/.m2
+      - .:/code
+    working_dir: /code
+    network_mode: host
+
+  csharp:
+    build:
+      context: .
+      dockerfile: scripts/Dockerfile-csharp
+    volumes:
+      - .:/code
+    working_dir: /code
+    network_mode: host
+
+  python:
+    image: python:3
+    volumes:
+    - .:/code
+    working_dir: /code
+    network_mode: host
+
+  php:
+    build:
+      context: ./build/influxdb-client-php
+      dockerfile: ./Dockerfile
+    volumes:
+      - .:/code
+    working_dir: /code
+    network_mode: host
+
+
+  influxdb_v2:
+    image: quay.io/influxdb/influxdb:2.0.0-beta
+    ports:
+      - "9999:9999"
+    command: influxd --reporting-disabled
+
+
