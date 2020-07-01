@@ -26,6 +26,7 @@ Supported are following client libraries:
 #### How to generate sources from updated swagger
 
 1. Make required changes in `./swagger.yml`
+1. Build openapi generator `make openapi-generator`
 1. `make generate-java`, `make generate-csharp`, `make generate-python`, `make generate-php` will generates sources for specific client library.
 1. `make generate-all` - generate new API stubs from `./swagger.yml` for all client libraries 
 1. optionaly `make check-all` will try to compile and run tests for all client libraries

@@ -28,7 +28,13 @@ help:
 dshell:
 	@docker-compose run java bash
 
-openapi-generator:
+git-checkout-all:
+	$(call git_checkout,influxdb-client-java)
+	$(call git_checkout,influxdb-client-csharp)
+	$(call git_checkout,influxdb-client-python)
+	$(call git_checkout,influxdb-client-php)
+
+openapi-generator: git-checkout-all
 	@docker-compose build
 	@docker-compose run java mvn -DskipTests -f openapi-generator/pom.xml clean install
 
@@ -37,7 +43,7 @@ generate-java:
 	$(call git_checkout,influxdb-client-java)
 	@rm -f ./build/influxdb-client-java/client/src/generated/java/com/influxdb/client/domain/*.java
 	@rm -f ./build/influxdb-client-java/client/src/generated/java/com/influxdb/client/service/*.java
-	@docker-compose run java mvn -f ./build/influxdb-client-java/client/pom.xml -DswaggerLocation=./swagger.yml org.openapitools:openapi-generator-maven-plugin:generate
+	@docker-compose run java mvn -f ./openapi-generator/pom-java.xml -DswaggerLocation=./swagger.yml org.openapitools:openapi-generator-maven-plugin:generate
 
 check-java:
 	@docker-compose run java mvn -f ./build/influxdb-client-java/pom.xml clean compile
@@ -51,7 +57,7 @@ generate-csharp:
 	@rm ./build/influxdb-client-csharp/Client/InfluxDB.Client.Api/Domain/*.cs || true
 	@rm ./build/influxdb-client-csharp/Client/InfluxDB.Client.Api/Service/*.cs || true
 	@rm ./build/influxdb-client-csharp/Client/InfluxDB.Client.Api/Client/*.cs || true
-	@docker-compose run java mvn -f ./build/influxdb-client-csharp/Scripts/pom.xml -DswaggerLocation=./swagger.yml org.openapitools:openapi-generator-maven-plugin:generate
+	@docker-compose run java mvn -f ./openapi-generator/pom-csharp.xml -DswaggerLocation=./swagger.yml org.openapitools:openapi-generator-maven-plugin:generate
 
 check-csharp:
 	@docker-compose run csharp dotnet build
@@ -64,7 +70,7 @@ generate-python:
 	$(call git_checkout,influxdb-client-python)
 	@rm ./build/influxdb-client-python/influxdb_client/domain/*.py || true
 	@rm ./build/influxdb-client-python/influxdb_client/service/*.py || true
-	@docker-compose run java mvn -f ./build/influxdb-client-python/scripts/pom.xml -DswaggerLocation=./swagger.yml org.openapitools:openapi-generator-maven-plugin:generate
+	@docker-compose run java mvn -f ./openapi-generator/pom-python.xml -DswaggerLocation=./swagger.yml org.openapitools:openapi-generator-maven-plugin:generate
 
 check-python:
 	@docker-compose  run --workdir=/code/build/influxdb-client-python  python pip install -e .
@@ -76,8 +82,28 @@ pr-python:
 #### Php
 generate-php:
 	$(call git_checkout,influxdb-client-php)
-	##TODO
-	@./build/influxdb-client-php/scripts/generate-sources.sh
+	rm -rf ./build/influxdb-client-php/generated
+	@docker-compose run java mvn -f ./openapi-generator/pom-php.xml -DswaggerLocation=./swagger.yml org.openapitools:openapi-generator-maven-plugin:generate
+	#### sync generated php files to src
+
+	# delete old sources
+	rm -f ./build/influxdb-client-php/src/InfluxDB2/API/*
+	rm -f ./build/influxdb-client-php/src/InfluxDB2/Model/*
+
+	#cp -r ./build/influxdb-client-php/generated/lib/ApiException.php ./build/influxdb-client-php/src/InfluxDB2
+	cp -r ./build/influxdb-client-php/generated/lib/ObjectSerializer.php ./build/influxdb-client-php/src/InfluxDB2
+
+	#mkdir -p ./build/influxdb-client-php/src/InfluxDB2/API
+	#cp -r ./build/influxdb-client-php/generated/lib/API/*.php ./build/influxdb-client-php/src/InfluxDB2/API
+
+	mkdir -p ./build/influxdb-client-php/src/InfluxDB2/Model
+	cp -r ./build/influxdb-client-php/generated/lib/Model/WritePrecision.php ./build/influxdb-client-php/src/InfluxDB2/Model
+	cp -r ./build/influxdb-client-php/generated/lib/Model/Query.php ./build/influxdb-client-php/src/InfluxDB2/Model
+	cp -r ./build/influxdb-client-php/generated/lib/Model/Dialect.php ./build/influxdb-client-php/src/InfluxDB2/Model
+	cp -r ./build/influxdb-client-php/generated/lib/Model/ModelInterface.php ./build/influxdb-client-php/src/InfluxDB2/Model
+	cp -r ./build/influxdb-client-php/generated/lib/Model/HealthCheck.php ./build/influxdb-client-php/src/InfluxDB2/Model
+
+	rm -rf ./build/influxdb-client-php/generated
 
 check-php:
 	@docker-compose run php composer install --working-dir=/code/build/influxdb-client-php
