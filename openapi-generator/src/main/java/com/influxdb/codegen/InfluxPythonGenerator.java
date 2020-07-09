@@ -1,4 +1,4 @@
-package com.influxdb.codegen;
+package org.influxdata.codegen;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +46,14 @@ public class InfluxPythonGenerator extends PythonClientCodegen {
         return "Generates a influx-python client library.";
     }
 
+    @Override
+    public String escapeText(String input) {
+        if (input == null) {
+            return input;
+        }
 
+        return super.escapeText(input).replace("\\\"", "\"");
+    }
 
 	@Override
 	public CodegenOperation fromOperation(String path, String httpMethod, Operation operation, Map<String, Schema> definitions, OpenAPI openAPI) {
