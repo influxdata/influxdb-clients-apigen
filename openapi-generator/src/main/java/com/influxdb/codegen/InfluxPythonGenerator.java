@@ -46,7 +46,14 @@ public class InfluxPythonGenerator extends PythonClientCodegen {
         return "Generates a influx-python client library.";
     }
 
+    @Override
+    public String escapeText(String input) {
+        if (input == null) {
+            return input;
+        }
 
+        return super.escapeText(input).replace("\\\"", "\"");
+    }
 
 	@Override
 	public CodegenOperation fromOperation(String path, String httpMethod, Operation operation, Map<String, Schema> definitions, OpenAPI openAPI) {
@@ -111,6 +118,12 @@ public class InfluxPythonGenerator extends PythonClientCodegen {
             codegenModel.hasOnlyReadOnly = true;
             codegenModel.hasRequired = false;
         }
+
+		if (codegenModel.name.equals("LesserThreshold") || codegenModel.name.equals("GreaterThreshold")
+				|| codegenModel.name.equals("RangeThreshold")) {
+			codegenModel.setParent("Threshold");
+			codegenModel.setParentSchema("Threshold");
+		}
 
 		if (codegenModel.name.equals("CheckBase")) {
 			codegenModel.setParent("CheckDiscriminator");

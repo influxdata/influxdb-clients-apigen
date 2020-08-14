@@ -23,7 +23,7 @@ from {{packageName}} import rest
 
 
 class ApiClient(object):
-    """Generic API client for OpenAPI client library builds.
+    """Generic API client for OpenAPI client library Build.
 
     OpenAPI generic API client. This client handles the client-
     server communication, and is invariant across implementations. Specifics of
@@ -58,13 +58,14 @@ class ApiClient(object):
     _pool = None
 
     def __init__(self, configuration=None, header_name=None, header_value=None,
-                 cookie=None, pool_threads=None):
+                 cookie=None, pool_threads=None, retries=False):
+        """Initialize generic API client."""
         if configuration is None:
             configuration = Configuration()
         self.configuration = configuration
         self.pool_threads = pool_threads
 
-        self.rest_client = rest.RESTClientObject(configuration)
+        self.rest_client = rest.RESTClientObject(configuration, retries=retries)
         self.default_headers = {}
         if header_name is not None:
             self.default_headers[header_name] = header_value
@@ -73,6 +74,7 @@ class ApiClient(object):
         self.user_agent = 'influxdb-client-python/{{{packageVersion}}}'
 
     def __del__(self):
+        """Dispose pools."""
         if self._pool:
             self._pool.close()
             self._pool.join()
@@ -82,23 +84,23 @@ class ApiClient(object):
 
     @property
     def pool(self):
-        """Create thread pool on first request
-         avoids instantiating unused threadpool for blocking clients.
-        """
+        """Create thread pool on first request avoids instantiating unused threadpool for blocking clients."""
         if self._pool is None:
             self._pool = ThreadPool(self.pool_threads)
         return self._pool
 
     @property
     def user_agent(self):
-        """User agent for this API client"""
+        """User agent for this API client."""
         return self.default_headers['User-Agent']
 
     @user_agent.setter
     def user_agent(self, value):
+        """Set User agent for this API client."""
         self.default_headers['User-Agent'] = value
 
     def set_default_header(self, header_name, header_value):
+        """Set HTTP header for this API client."""
         self.default_headers[header_name] = header_value
 
     {{#tornado}}
@@ -109,7 +111,7 @@ class ApiClient(object):
             query_params=None, header_params=None, body=None, post_params=None,
             files=None, response_type=None, auth_settings=None,
             _return_http_data_only=None, collection_formats=None,
-            _preload_content=True, _request_timeout=None):
+            _preload_content=True, _request_timeout=None, urlopen_kw=None):
 
         config = self.configuration
 
@@ -160,12 +162,14 @@ class ApiClient(object):
         # request url
         url = self.configuration.host + resource_path
 
+        urlopen_kw = urlopen_kw or {}
+
         # perform request and return response
         response_data = {{#asyncio}}await {{/asyncio}}{{#tornado}}yield {{/tornado}}self.request(
             method, url, query_params=query_params, headers=header_params,
             post_params=post_params, body=body,
             _preload_content=_preload_content,
-            _request_timeout=_request_timeout)
+            _request_timeout=_request_timeout, **urlopen_kw)
 
         self.last_response = response_data
 
@@ -193,7 +197,7 @@ class ApiClient(object):
 {{/tornado}}
 
     def sanitize_for_serialization(self, obj):
-        """Builds a JSON POST object.
+        """Build a JSON POST object.
 
         If obj is None, return None.
         If obj is str, int, long, float, bool, return directly.
@@ -300,8 +304,8 @@ class ApiClient(object):
                  body=None, post_params=None, files=None,
                  response_type=None, auth_settings=None, async_req=None,
                  _return_http_data_only=None, collection_formats=None,
-                 _preload_content=True, _request_timeout=None):
-        """Makes the HTTP request (synchronous) and returns deserialized data.
+                 _preload_content=True, _request_timeout=None, urlopen_kw=None):
+        """Make the HTTP request (synchronous) and Return deserialized data.
 
         To make an async_req request, set the async_req parameter.
 
@@ -330,6 +334,8 @@ class ApiClient(object):
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
                                  (connection, read) timeouts.
+        :param urlopen_kw: Additional parameters are passed to
+                           :meth:`urllib3.request.RequestMethods.request`
         :return:
             If async_req parameter is True,
             the request will be called asynchronously.
@@ -343,7 +349,7 @@ class ApiClient(object):
                                    body, post_params, files,
                                    response_type, auth_settings,
                                    _return_http_data_only, collection_formats,
-                                   _preload_content, _request_timeout)
+                                   _preload_content, _request_timeout, urlopen_kw)
         else:
             thread = self.pool.apply_async(self.__call_api, (resource_path,
                                            method, path_params, query_params,
@@ -352,25 +358,27 @@ class ApiClient(object):
                                            response_type, auth_settings,
                                            _return_http_data_only,
                                            collection_formats,
-                                           _preload_content, _request_timeout))
+                                           _preload_content, _request_timeout, urlopen_kw))
         return thread
 
     def request(self, method, url, query_params=None, headers=None,
                 post_params=None, body=None, _preload_content=True,
-                _request_timeout=None):
-        """Makes the HTTP request using RESTClient."""
+                _request_timeout=None, **urlopen_kw):
+        """Make the HTTP request using RESTClient."""
         if method == "GET":
             return self.rest_client.GET(url,
                                         query_params=query_params,
                                         _preload_content=_preload_content,
                                         _request_timeout=_request_timeout,
-                                        headers=headers)
+                                        headers=headers,
+                                        **urlopen_kw)
         elif method == "HEAD":
             return self.rest_client.HEAD(url,
                                          query_params=query_params,
                                          _preload_content=_preload_content,
                                          _request_timeout=_request_timeout,
-                                         headers=headers)
+                                         headers=headers,
+                                         **urlopen_kw)
         elif method == "OPTIONS":
             return self.rest_client.OPTIONS(url,
                                             query_params=query_params,
@@ -378,7 +386,8 @@ class ApiClient(object):
                                             post_params=post_params,
                                             _preload_content=_preload_content,
                                             _request_timeout=_request_timeout,
-                                            body=body)
+                                            body=body,
+                                            **urlopen_kw)
         elif method == "POST":
             return self.rest_client.POST(url,
                                          query_params=query_params,
@@ -386,7 +395,8 @@ class ApiClient(object):
                                          post_params=post_params,
                                          _preload_content=_preload_content,
                                          _request_timeout=_request_timeout,
-                                         body=body)
+                                         body=body,
+                                         **urlopen_kw)
         elif method == "PUT":
             return self.rest_client.PUT(url,
                                         query_params=query_params,
@@ -394,7 +404,8 @@ class ApiClient(object):
                                         post_params=post_params,
                                         _preload_content=_preload_content,
                                         _request_timeout=_request_timeout,
-                                        body=body)
+                                        body=body,
+                                        **urlopen_kw)
         elif method == "PATCH":
             return self.rest_client.PATCH(url,
                                           query_params=query_params,
@@ -402,14 +413,16 @@ class ApiClient(object):
                                           post_params=post_params,
                                           _preload_content=_preload_content,
                                           _request_timeout=_request_timeout,
-                                          body=body)
+                                          body=body,
+                                          **urlopen_kw)
         elif method == "DELETE":
             return self.rest_client.DELETE(url,
                                            query_params=query_params,
                                            headers=headers,
                                            _preload_content=_preload_content,
                                            _request_timeout=_request_timeout,
-                                           body=body)
+                                           body=body,
+                                           **urlopen_kw)
         else:
             raise ValueError(
                 "http method must be `GET`, `HEAD`, `OPTIONS`,"
@@ -447,7 +460,7 @@ class ApiClient(object):
         return new_params
 
     def prepare_post_parameters(self, post_params=None, files=None):
-        """Builds form parameters.
+        """Build form parameters.
 
         :param post_params: Normal form parameters.
         :param files: File parameters.
@@ -475,7 +488,7 @@ class ApiClient(object):
         return params
 
     def select_header_accept(self, accepts):
-        """Returns `Accept` based on an array of accepts provided.
+        """Return `Accept` based on an array of accepts provided.
 
         :param accepts: List of headers.
         :return: Accept (e.g. application/json).
@@ -491,7 +504,7 @@ class ApiClient(object):
             return ', '.join(accepts)
 
     def select_header_content_type(self, content_types):
-        """Returns `Content-Type` based on an array of content_types provided.
+        """Return `Content-Type` based on an array of content_types provided.
 
         :param content_types: List of content-types.
         :return: Content-Type (e.g. application/json).
@@ -507,7 +520,7 @@ class ApiClient(object):
             return content_types[0]
 
     def update_params_for_auth(self, headers, querys, auth_settings):
-        """Updates header and query params based on authentication setting.
+        """Update header and query params based on authentication setting.
 
         :param headers: Header parameters dict to be updated.
         :param querys: Query parameters tuple list to be updated.
@@ -531,7 +544,7 @@ class ApiClient(object):
                     )
 
     def __deserialize_file(self, response):
-        """Deserializes body to file
+        """Deserializes body to file.
 
         Saves response body into a file in a temporary folder,
         using the filename from the `Content-Disposition` header if provided.
@@ -622,7 +635,6 @@ class ApiClient(object):
         :param klass: class literal.
         :return: model object.
         """
-
         if not klass.openapi_types and not hasattr(klass,
                                                    'get_real_child_model'):
             return data
