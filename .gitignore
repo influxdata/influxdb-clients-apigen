@@ -20,3 +20,4 @@ hs_err_pid*
 build
 openapi-generator/target
 /openapi-generator/target/
+.DS_Store

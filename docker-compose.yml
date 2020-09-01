@@ -29,9 +29,7 @@ services:
     network_mode: host
 
   php:
-    build:
-      context: ./build/influxdb-client-php
-      dockerfile: ./Dockerfile
+    image: composer
     volumes:
       - .:/code
     working_dir: /code
