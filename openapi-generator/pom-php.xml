@@ -17,11 +17,12 @@
                 <version>3.3.4</version>
                 <configuration>
                     <inputSpec>${swaggerLocation}</inputSpec>
-                    <generatorName>php</generatorName>
+                    <generatorName>influx-php</generatorName>
                     <configOptions>
                         <moduleName>InfluxDB2</moduleName>
                         <invokerPackage>InfluxDB2</invokerPackage>
-                        <apiPackage>service</apiPackage>
+                        <apiPackage>Service</apiPackage>
+                        <apiNameSuffix>Service</apiNameSuffix>
                     </configOptions>
                     <generateModelDocumentation>false</generateModelDocumentation>
                     <generateApiDocumentation>false</generateApiDocumentation>
@@ -34,6 +35,14 @@
                     <output>${project.basedir}/../build/influxdb-client-php/generated</output>
                     <addCompileSourceRoot>false</addCompileSourceRoot>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.influxdb</groupId>
+                        <artifactId>openapi-generator</artifactId>
+                        <version>1.0.0</version>
+                    </dependency>
+                </dependencies>
+
             </plugin>
         </plugins>
     </build>
