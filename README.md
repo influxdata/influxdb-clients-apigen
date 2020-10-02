@@ -7,7 +7,7 @@ Supported are following client libraries:
 * Java, 
 * C#, 
 * Python, 
-* Ruby
+* Php
 
 #### Goals:
  
