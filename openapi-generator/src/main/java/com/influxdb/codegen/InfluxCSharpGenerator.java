@@ -390,13 +390,13 @@ public class InfluxCSharpGenerator extends CSharpClientCodegen {
         }
 
         if (codegenModel.name.endsWith("Literal")) {
-			codegenModel.setParent("Expression");
-			codegenModel.setParentSchema("Expression");
+            codegenModel.setParent("Expression");
+            codegenModel.setParentSchema("Expression");
         }
 
         if (codegenModel.name.endsWith("Statement") && !codegenModel.name.equals("Statement")) {
-			codegenModel.setParent("Statement");
-			codegenModel.setParentSchema("Statement");
+            codegenModel.setParent("Statement");
+            codegenModel.setParentSchema("Statement");
         }
 
         return codegenModel;
