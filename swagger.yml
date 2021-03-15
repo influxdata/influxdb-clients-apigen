@@ -6825,9 +6825,13 @@ components:
                   - expire
               everySeconds:
                 type: integer
-                description: Duration in seconds for how long data will be kept in the database.
+                description: Duration in seconds for how long data will be kept in the database. 0 means infinite.
                 example: 86400
-                minimum: 1
+                minimum: 0
+              shardGroupDurationSeconds:
+                type: integer
+                format: int64
+                description: Shard duration measured in seconds.
             required: [type, everySeconds]
       required: [name, retentionRules]
     Bucket:
@@ -6900,9 +6904,13 @@ components:
                   - expire
               everySeconds:
                 type: integer
-                description: Duration in seconds for how long data will be kept in the database.
+                description: Duration in seconds for how long data will be kept in the database. 0 means infinite.
                 example: 86400
-                minimum: 1
+                minimum: 0
+              shardGroupDurationSeconds:
+                type: integer
+                format: int64
+                description: Shard duration measured in seconds.
             required: [type, everySeconds]
         labels:
           $ref: "#/components/schemas/Labels"
