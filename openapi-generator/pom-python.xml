@@ -10,7 +10,8 @@
         <library>urllib3</library>
         <swaggerLocation>${project.basedir}/../swagger.yml</swaggerLocation>
         <clientVersion>1.11.0dev</clientVersion>
-    </properties>
+		<outputLocation>${project.basedir}/../build/influxdb-client-python</outputLocation>
+	</properties>
     <build>
         <plugins>
             <plugin>
@@ -35,7 +36,7 @@
                     <generateSupportingFiles>true</generateSupportingFiles>
                     <generateModelTests>false</generateModelTests>
                     <verbose>false</verbose>
-                    <output>${project.basedir}/../build/influxdb-client-python</output>
+                    <output>${outputLocation}</output>
                     <addCompileSourceRoot>false</addCompileSourceRoot>
                     <library>${library}</library>
                 </configuration>

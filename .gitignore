@@ -21,3 +21,4 @@ build
 openapi-generator/target
 /openapi-generator/target/
 .DS_Store
+oss.yml
