@@ -43,35 +43,36 @@ class PostProcessHelper
 		// Set DateTimeSchema for DateTimeLiteral
 		//
 		{
-			ObjectSchema objectSchema = (ObjectSchema) openAPI.getComponents().getSchemas().get("DateTimeLiteral");
-			Map<String, Schema> properties = objectSchema.getProperties();
 			Schema dateTimeSchema = new DateTimeSchema()
 					.type("string")
-					.format("date-time")
-					.description(properties.get("value").getDescription());
-			properties.put("value", dateTimeSchema);
+					.format("date-time");
+			changePropertySchema("value", "DateTimeLiteral", dateTimeSchema);
 		}
 
 		//
 		// Use generic scheme for Telegraf plugins instead of TelegrafInputCPU, TelegrafInputMem, ...
 		//
 		{
-			ObjectSchema objectSchema = (ObjectSchema) openAPI.getComponents().getSchemas().get("TelegrafPlugin");
-			Map<String, Schema> properties = objectSchema.getProperties();
-			Schema configSchema = new ObjectSchema()
-					.additionalProperties(new ObjectSchema())
-					.description(properties.get("config").getDescription());
-			properties.put("config", configSchema);
+			Schema newPropertySchema = new ObjectSchema().additionalProperties(new ObjectSchema());
+			changePropertySchema("config", "TelegrafPlugin", newPropertySchema);
 
 			// remove plugins
 			dropSchemas("TelegrafPluginInput(.+)|TelegrafPluginOutput(.+)|TelegrafRequestPlugin");
 		}
 
 		//
-		// Drop supports form Geo
+		// Drop supports for Geo
 		//
 		{
 			dropSchemas("Geo(.*)View(.*)");
+		}
+
+		//
+		// Drop supports for Templates, Stack
+		//
+		{
+			dropSchemas("Stack(.*)|Template(.*)");
+			dropPaths("/stacks(.*)|/templates(.*)");
 		}
 	}
 
@@ -98,11 +99,26 @@ class PostProcessHelper
 		}
 	}
 
+	private void changePropertySchema(final String property, final String schema, final Schema propertySchema)
+	{
+		ObjectSchema objectSchema = (ObjectSchema) openAPI.getComponents().getSchemas().get(schema);
+
+		Map<String, Schema> properties = objectSchema.getProperties();
+		properties.put(property, propertySchema.description(properties.get(property).getDescription()));
+	}
+
 	private void dropSchemas(@Language("RegExp") final String regexp)
 	{
 		openAPI.getComponents()
 				.getSchemas()
 				.entrySet()
 				.removeIf(entry -> entry.getKey().matches(regexp));
+	}
+
+	private void dropPaths(@Language("RegExp") final String regex)
+	{
+		openAPI.getPaths()
+				.entrySet()
+				.removeIf(entry -> entry.getKey().matches(regex));
 	}
 }
