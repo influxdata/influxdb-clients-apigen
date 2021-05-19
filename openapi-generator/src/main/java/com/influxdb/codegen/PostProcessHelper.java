@@ -1,7 +1,5 @@
 package com.influxdb.codegen;
 
-import javax.annotation.Nonnull;
-
 import java.util.Map;
 
 import io.swagger.v3.oas.models.OpenAPI;
@@ -12,6 +10,7 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.RequestBody;
+import org.intellij.lang.annotations.Language;
 import org.openapitools.codegen.CodegenOperation;
 
 /**
@@ -37,6 +36,7 @@ class PostProcessHelper
 			// Set correct schema to `Query` object
 			Schema schema = ((ComposedSchema) mediaType.getSchema()).getOneOf().get(0);
 			mediaType.schema(schema);
+			dropSchemas("InfluxQLQuery");
 		}
 
 		//
@@ -50,6 +50,28 @@ class PostProcessHelper
 					.format("date-time")
 					.description(properties.get("value").getDescription());
 			properties.put("value", dateTimeSchema);
+		}
+
+		//
+		// Use generic scheme for Telegraf plugins instead of TelegrafInputCPU, TelegrafInputMem, ...
+		//
+		{
+			ObjectSchema objectSchema = (ObjectSchema) openAPI.getComponents().getSchemas().get("TelegrafPlugin");
+			Map<String, Schema> properties = objectSchema.getProperties();
+			Schema configSchema = new ObjectSchema()
+					.additionalProperties(new ObjectSchema())
+					.description(properties.get("config").getDescription());
+			properties.put("config", configSchema);
+
+			// remove plugins
+			dropSchemas("TelegrafPluginInput(.+)|TelegrafPluginOutput(.+)|TelegrafRequestPlugin");
+		}
+
+		//
+		// Drop supports form Geo
+		//
+		{
+			dropSchemas("Geo(.*)View(.*)");
 		}
 	}
 
@@ -74,5 +96,13 @@ class PostProcessHelper
 		if (!"/".equals(url) && url != null) {
 			op.path = url + op.path;
 		}
+	}
+
+	private void dropSchemas(@Language("RegExp") final String regexp)
+	{
+		openAPI.getComponents()
+				.getSchemas()
+				.entrySet()
+				.removeIf(entry -> entry.getKey().matches(regexp));
 	}
 }
