@@ -1,17 +1,27 @@
 package com.influxdb.codegen;
 
+import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.media.ComposedSchema;
+import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.DateTimeSchema;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import org.intellij.lang.annotations.Language;
+import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
+import org.openapitools.codegen.utils.StringUtils;
 
 /**
  * @author Jakub Bednar (18/05/2021 13:20)
@@ -74,6 +84,61 @@ class PostProcessHelper
 			dropSchemas("Stack(.*)|Template(.*)");
 			dropPaths("/stacks(.*)|/templates(.*)");
 		}
+
+		//
+		// Set correct name for Inline Request Body
+		//
+		for (PathItem pathItem: openAPI.getPaths().values()) {
+			pathItem.readOperationsMap().forEach(new BiConsumer<PathItem.HttpMethod, Operation>()
+			{
+				@Override
+				public void accept(final PathItem.HttpMethod method, final Operation operation)
+				{
+					// find only operation with body
+					if (operation.getRequestBody() == null || operation.getRequestBody().getContent() == null) {
+						return;
+					}
+
+					for (MediaType mediaType: operation.getRequestBody().getContent().values()) {
+						Schema schema = mediaType.getSchema();
+						// find only body with InlineObject and without Title
+						if (schema instanceof ObjectSchema && schema.get$ref() == null && schema.getTitle() == null)
+						{
+							// set name from operationId: "PatchDashboardsID" => "PatchPatchDashboardsIDRequest"
+							String title = method.name() + " " + operation.getSummary() + " " + "Request";
+							schema.title(StringUtils.camelize(StringUtils.underscore(title)));
+						}
+					}
+				}
+			});
+		}
+	}
+
+	void postProcessModels(Map<String, Object> allModels) {
+
+		// Iterate all models
+		for (Map.Entry<String, Object> entry : allModels.entrySet())
+		{
+			CodegenModel pluginModel = getModel((HashMap) entry.getValue());
+
+			//
+			// Set correct inheritance. The "interfaces" extends base object.
+			//
+			if (!pluginModel.hasVars && pluginModel.interfaceModels != null)
+			{
+				if (pluginModel.getName().matches("(.*)Check(.*)|(.*)Notification(.*)")) {
+					continue;
+				}
+
+				for (CodegenModel interfaceModel : pluginModel.interfaceModels)
+				{
+					interfaceModel.setParent(pluginModel.classname);
+				}
+
+				pluginModel.interfaces.clear();
+				pluginModel.interfaceModels.clear();
+			}
+		}
 	}
 
 	void postProcessOperation(String path, Operation operation, CodegenOperation op)
@@ -97,6 +162,14 @@ class PostProcessHelper
 		if (!"/".equals(url) && url != null) {
 			op.path = url + op.path;
 		}
+	}
+
+	@Nonnull
+	CodegenModel getModel(@Nonnull final HashMap modelConfig) {
+
+		HashMap models = (HashMap) ((ArrayList) modelConfig.get("models")).get(0);
+
+		return (CodegenModel) models.get("model");
 	}
 
 	private void changePropertySchema(final String property, final String schema, final Schema propertySchema)
