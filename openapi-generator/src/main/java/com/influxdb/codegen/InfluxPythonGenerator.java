@@ -10,11 +10,11 @@ import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Schema;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.languages.PythonClientCodegen;
-
-import static org.openapitools.codegen.utils.StringUtils.camelize;
-import static org.openapitools.codegen.utils.StringUtils.underscore;
+import org.openapitools.codegen.utils.StringUtils;
 
 public class InfluxPythonGenerator extends PythonClientCodegen {
+
+	private PostProcessHelper postProcessHelper;
 
     public InfluxPythonGenerator() {
         apiPackage = "service";
@@ -41,35 +41,20 @@ public class InfluxPythonGenerator extends PythonClientCodegen {
         return "Generates a influx-python client library.";
     }
 
-    @Override
-    public String escapeText(String input) {
-        if (input == null) {
-            return input;
-        }
+	@Override
+	public void setGlobalOpenAPI(final OpenAPI openAPI)
+	{
+		postProcessHelper = new PostProcessHelper(openAPI);
+		postProcessHelper.postProcessOpenAPI();
 
-        return super.escapeText(input).replace("\\\"", "\"");
-    }
+		super.setGlobalOpenAPI(openAPI);
+	}
 
 	@Override
 	public CodegenOperation fromOperation(String path, String httpMethod, Operation operation, Map<String, Schema> definitions, OpenAPI openAPI) {
 
 		CodegenOperation op = super.fromOperation(path, httpMethod, operation, definitions, openAPI);
-
-		//
-		// Set base path
-		//
-		String url;
-		if (operation.getServers() != null) {
-			url = operation.getServers().get(0).getUrl();
-		} else if (openAPI.getPaths().get(path).getServers() != null) {
-			url = openAPI.getPaths().get(path).getServers().get(0).getUrl();
-		} else {
-			url = openAPI.getServers().get(0).getUrl();
-		}
-
-		if (!url.equals("/")) {
-			op.path = url + op.path;
-		}
+		postProcessHelper.postProcessOperation(path, operation, op);
 
 		return op;
 	}
@@ -90,84 +75,6 @@ public class InfluxPythonGenerator extends PythonClientCodegen {
         supportingFiles = supportingFiles.stream()
                 .filter(supportingFile -> !useless.contains(supportingFile.destinationFilename))
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public CodegenModel fromModel(final String name, final Schema model, final Map<String, Schema> allDefinitions) {
-        CodegenModel codegenModel = super.fromModel(name, model, allDefinitions);
-
-        if (name.endsWith("ViewProperties") && !name.equals("ViewProperties"))
-        {
-            codegenModel.setParent("ViewProperties");
-            codegenModel.setParentSchema("ViewProperties");
-        }
-
-        if (allDefinitions.containsKey(name + "Base")) {
-            codegenModel.setParent(name + "Base");
-            codegenModel.setParentSchema(name + "Base");
-        }
-
-        if (name.equals("ViewProperties"))  {
-            codegenModel.setReadWriteVars(new ArrayList<>());
-            codegenModel.setRequiredVars(new ArrayList<>());
-            codegenModel.hasOnlyReadOnly = true;
-            codegenModel.hasRequired = false;
-        }
-
-		if (codegenModel.name.equals("LesserThreshold") || codegenModel.name.equals("GreaterThreshold")
-				|| codegenModel.name.equals("RangeThreshold")) {
-			codegenModel.setParent("Threshold");
-			codegenModel.setParentSchema("Threshold");
-		}
-
-		if (codegenModel.name.equals("CheckBase")) {
-			codegenModel.setParent("CheckDiscriminator");
-			codegenModel.setParentSchema("CheckDiscriminator");
-		}
-
-		if (codegenModel.name.equals("CheckDiscriminator")) {
-			codegenModel.setParent("PostCheck");
-			codegenModel.setParentSchema("PostCheck");
-		}
-
-		if (codegenModel.name.equals("NotificationEndpointBase")) {
-			codegenModel.setParent("NotificationEndpointDiscriminator");
-			codegenModel.setParentSchema("NotificationEndpointDiscriminator");
-		}
-
-		if (codegenModel.name.equals("PostCheck") || codegenModel.name.equals("PostNotificationEndpoint")) {
-			codegenModel.setParent(null);
-			codegenModel.setParentSchema(null);
-		}
-
-		if (codegenModel.name.equals("DeadmanCheck") || codegenModel.name.equals("ThresholdCheck")) {
-			codegenModel.setParent("Check");
-			codegenModel.setParentSchema("Check");
-		}
-
-		if (codegenModel.name.equals("SlackNotificationEndpoint") || codegenModel.name.equals("PagerDutyNotificationEndpoint")
-				|| codegenModel.name.equals("HTTPNotificationEndpoint")) {
-			codegenModel.setParent("NotificationEndpoint");
-			codegenModel.setParentSchema("NotificationEndpoint");
-		}
-
-		if (codegenModel.name.equals("NotificationEndpointDiscriminator")) {
-			codegenModel.setParent("PostNotificationEndpoint");
-			codegenModel.setParentSchema("PostNotificationEndpoint");
-		}
-
-		if (codegenModel.name.equals("NotificationRuleBase")) {
-			codegenModel.setParent("PostNotificationRule");
-			codegenModel.setParentSchema("PostNotificationRule");
-		}
-
-		if (codegenModel.name.endsWith("Discriminator")) {
-			codegenModel.hasOnlyReadOnly = true;
-			codegenModel.hasRequired = false;
-			codegenModel.readWriteVars.clear();
-		}
-
-        return codegenModel;
     }
 
     @Override
@@ -194,7 +101,7 @@ public class InfluxPythonGenerator extends PythonClientCodegen {
             return "DefaultService";
         }
         // e.g. phone_number_service => PhoneNumberService
-        return camelize(name) + "Service";
+        return StringUtils.camelize(name) + "Service";
     }
 
     @Override
@@ -203,7 +110,7 @@ public class InfluxPythonGenerator extends PythonClientCodegen {
         if (name.length() == 0) {
             return "default_service";
         }
-        return underscore(name) + "_service";
+        return StringUtils.underscore(name) + "_service";
     }
 
     @Override
@@ -212,24 +119,19 @@ public class InfluxPythonGenerator extends PythonClientCodegen {
         name = name.replaceAll("-", "_");
 
         // e.g. PhoneNumberService.py => phone_number_service.py
-        return underscore(name) + "_service";
+        return StringUtils.underscore(name) + "_service";
     }
 
 	@Override
 	public String toModelName(final String name) {
 		final String modelName = super.toModelName(name);
-		if ("PostBucketRequestRetentionRules".equals(modelName)) {
+		if ("RetentionRule".equals(modelName)) {
 			return "BucketRetentionRules";
+		}
+		if ("Resource".equals(modelName)) {
+			return "PermissionResource";
 		}
 
 		return modelName;
 	}
-
-    @Nonnull
-    private CodegenModel getModel(@Nonnull final HashMap modelConfig) {
-
-        HashMap models = (HashMap) ((ArrayList) modelConfig.get("models")).get(0);
-
-        return (CodegenModel) models.get("model");
-    }
 }
