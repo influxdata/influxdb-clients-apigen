@@ -1,18 +1,13 @@
 package com.influxdb.codegen;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nonnull;
-
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Schema;
-import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.languages.PythonClientCodegen;
 
@@ -179,26 +174,21 @@ public class InfluxPythonGenerator extends PythonClientCodegen {
     public Map<String, Object> postProcessAllModels(final Map<String, Object> models) {
 
         Map<String, Object> allModels = super.postProcessAllModels(models);
+		postProcessHelper.postProcessModels(allModels);
 
-        for (Map.Entry<String, Object> entry : allModels.entrySet()) {
-
-            String modelName = entry.getKey();
-            Object modelConfig = entry.getValue();
-
-            CodegenModel model = getModel((HashMap) modelConfig);
-
-            if (model.getParent() != null) {
-                CodegenModel parentModel = getModel((HashMap) allModels.get(model.getParent()));
-                model.vendorExtensions.put("x-parent-classFilename", parentModel.getClassFilename());
-                model.vendorExtensions.put("x-has-parent-vars", !parentModel.getVars().isEmpty());
-                model.vendorExtensions.put("x-parent-vars", parentModel.getVars());
-            }
-        }
-
-        return allModels;
+		return allModels;
     }
 
-    @Override
+	@Override
+	public String escapeText(String input) {
+		if (input == null) {
+			return null;
+		}
+
+		return super.escapeText(input).replace("\\\"", "\"");
+	}
+
+	@Override
     public String toApiName(String name) {
         if (name.length() == 0) {
             return "DefaultService";
