@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
-import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
@@ -20,7 +19,7 @@ import org.intellij.lang.annotations.Language;
 import org.openapitools.codegen.CodegenDiscriminator;
 import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
-import org.openapitools.codegen.utils.StringUtils;
+import org.openapitools.codegen.CodegenProperty;
 
 /**
  * @author Jakub Bednar (18/05/2021 13:20)
@@ -46,14 +45,6 @@ class PostProcessHelper
 			Schema schema = ((ComposedSchema) mediaType.getSchema()).getOneOf().get(0);
 			mediaType.schema(schema);
 			dropSchemas("InfluxQLQuery");
-		}
-
-		//
-		// Set correct name for NotificationEndpointDiscrimator
-		//
-		{
-			Schema schema = openAPI.getComponents().getSchemas().remove("NotificationEndpointDiscrimator");
-			openAPI.getComponents().getSchemas().put("NotificationEndpointDiscriminator", schema);
 		}
 
 		//
@@ -83,26 +74,11 @@ class PostProcessHelper
 		}
 
 		//
-		// Set correct name for Inline Request Body
+		// Fix required parameters
 		//
-		for (PathItem pathItem: openAPI.getPaths().values()) {
-			pathItem.readOperationsMap().forEach((method, operation) -> {
-				// find only operation with body
-				if (operation.getRequestBody() == null || operation.getRequestBody().getContent() == null) {
-					return;
-				}
-
-				for (MediaType mediaType: operation.getRequestBody().getContent().values()) {
-					Schema schema = mediaType.getSchema();
-					// find only body with InlineObject and without Title
-					if (schema instanceof ObjectSchema && schema.get$ref() == null && schema.getTitle() == null)
-					{
-						// set name from operationId: "PatchDashboardsID" => "PatchPatchDashboardsIDRequest"
-						String title = method.name() + " " + operation.getSummary() + " " + "Request";
-						schema.title(StringUtils.camelize(StringUtils.underscore(title)));
-					}
-				}
-			});
+		{
+			Schema schema = openAPI.getComponents().getSchemas().get("NotificationRuleBase");
+			schema.getRequired().removeAll(Arrays.asList("id", "tagRules"));
 		}
 	}
 
@@ -140,6 +116,11 @@ class PostProcessHelper
 		for (Map.Entry<String, Object> entry : allModels.entrySet())
 		{
 			CodegenModel model = getModel((HashMap) entry.getValue());
+			String modelName = model.getName();
+
+			if (modelName.matches("(.*)Check(.*)|(.*)Threshold(.*)|(.*)NotificationEndpoint(.*)|(.*)NotificationRule(.*)") && !"CheckViewProperties".equals(modelName)) {
+				continue;
+			}
 
 			//
 			// Set parent vars extension => useful for Object initialization
@@ -212,52 +193,61 @@ class PostProcessHelper
 	{
 		CodegenModel schema = getModel((HashMap) allModels.get(name));
 		CodegenModel base = getModel((HashMap) allModels.get(name + "Base"));
-		CodegenModel discriminator = schema;
+
+		CodegenModel discriminatorModel = schema;
+		CodegenDiscriminator discriminator = schema.getDiscriminator();
 		// Try to find intermediate entity -> Check -> CheckDiscriminator -> CheckBase
 		if (allModels.containsKey(name + "Discriminator"))
 		{
-			discriminator = getModel((HashMap) allModels.get(name + "Discriminator"));
+			discriminatorModel = getModel((HashMap) allModels.get(name + "Discriminator"));
+			discriminator = discriminatorModel.getDiscriminator();
 		}
+		String discriminatorPropertyName = discriminator.getPropertyName();
 
-		discriminator.setChildren(new ArrayList<>());
-		discriminator.hasChildren = false;
-		discriminator.setParentModel(base);
-		discriminator.setParent(base.getName());
-		discriminator.setParentSchema(base.getName());
-		discriminator.setParentVars(base.getVars());
+		discriminatorModel.setChildren(new ArrayList<>());
+		discriminatorModel.hasChildren = false;
+		discriminatorModel.setParentModel(base);
+		discriminatorModel.setParent(base.getName());
+		discriminatorModel.setParentSchema(base.getName());
+		setParentVars(discriminatorModel, base.getVars());
 
-		List<CodegenModel> discriminatorModels = mappings.stream()
+		List<CodegenModel> modelsInDiscriminator = mappings.stream()
 				.map(mapping -> getModel((HashMap) allModels.get(mapping + name)))
 				.collect(Collectors.toList());
 
-		for (CodegenModel discriminatorModel : discriminatorModels)
+		for (CodegenModel modelInDiscriminator : modelsInDiscriminator)
 		{
-			CodegenModel discriminatorModelBase = discriminatorModel;
+			CodegenModel discriminatorModelBase = modelInDiscriminator;
 			// if there is BaseModel then extend this SlackNotificationRule > SlackNotificationRuleBase
-			if (allModels.containsKey(discriminatorModel.name + "Base")) {
-				discriminatorModelBase = getModel((HashMap) allModels.get(discriminatorModel.name + "Base"));
-				discriminatorModel.setParentModel(discriminatorModelBase);
-				discriminatorModel.setParent(discriminatorModelBase.getName());
-				discriminatorModel.setParentSchema(discriminatorModelBase.getName());
-				discriminatorModel.vendorExtensions.put("x-has-parent-vars", !base.getVars().isEmpty());
-				discriminatorModel.vendorExtensions.put("x-parent-vars", base.getVars());
+			if (allModels.containsKey(modelInDiscriminator.name + "Base")) {
+				discriminatorModelBase = getModel((HashMap) allModels.get(modelInDiscriminator.name + "Base"));
+				modelInDiscriminator.setParentModel(discriminatorModelBase);
+				modelInDiscriminator.setParent(discriminatorModelBase.getName());
+				modelInDiscriminator.setParentSchema(discriminatorModelBase.getName());
+
+				// add parent vars from base and also from discriminator
+				ArrayList<CodegenProperty> objects = new ArrayList<>();
+				objects.addAll(discriminatorModelBase.getVars());
+				objects.get(objects.size() - 1).hasMore = true;
+				objects.addAll(base.getVars());
+
+				setParentVars(modelInDiscriminator, objects);
 			}
 
-			discriminatorModelBase.setParentModel(discriminator);
-			discriminatorModelBase.setParent(discriminator.getName());
-			discriminatorModelBase.setParentSchema(discriminator.getName());
-			discriminatorModelBase.vendorExtensions.put("x-has-parent-vars", !base.getVars().isEmpty());
-			discriminatorModelBase.vendorExtensions.put("x-parent-vars", base.getVars());
+			discriminatorModelBase.setParentModel(discriminatorModel);
+			discriminatorModelBase.setParent(discriminatorModel.getName());
+			discriminatorModelBase.setParentSchema(discriminatorModel.getName());
+			setParentVars(discriminatorModelBase, base.getVars());
 
 			// set correct name for discriminator
-			String discriminatorKey = discriminator.getDiscriminator().getMappedModels()
+			String discriminatorKey = discriminator.getMappedModels()
 					.stream()
-					.filter(mapped -> discriminatorModel.name.equals(mapped.getModelName()))
+					.filter(mapped -> modelInDiscriminator.name.equals(mapped.getModelName()))
 					.findFirst()
 					.map(CodegenDiscriminator.MappedModel::getMappingName)
 					.get();
 
-			discriminatorModel.vendorExtensions.put("x-discriminator-value", discriminatorKey);
+			modelInDiscriminator.vendorExtensions.put("x-discriminator-value", discriminatorKey);
 		}
 
 		// If there is also Post schema then use same discriminator: Check, PostCheck
@@ -270,8 +260,8 @@ class PostProcessHelper
 
 		for (CodegenModel rootModel : rootModels)
 		{
-			rootModel.setDiscriminator(discriminator.getDiscriminator());
-			rootModel.setChildren(discriminatorModels);
+			rootModel.setDiscriminator(discriminator);
+			rootModel.setChildren(modelsInDiscriminator);
 			rootModel.hasChildren = true;
 
 			// If there is no intermediate entity, than leave current parent schema
@@ -279,6 +269,47 @@ class PostProcessHelper
 				rootModel.setParentSchema(null);
 				rootModel.setParent(null);
 			}
+
+			boolean presentDiscriminatorVar = rootModel
+					.getRequiredVars()
+					.stream()
+					.anyMatch(codegenProperty -> codegenProperty.getName().equals(discriminatorPropertyName));
+
+			// there isn't discriminator property => add from discriminator model
+			if (!presentDiscriminatorVar)
+			{
+				String msg = String.format("The discriminator model: %s doesn't have a discriminator property: %s",
+						discriminatorModel, discriminatorPropertyName);
+
+				CodegenProperty discriminatorVar = discriminatorModel
+						.getRequiredVars()
+						.stream()
+						.filter(it -> it.getName().equals(discriminatorPropertyName))
+						.findFirst()
+						.orElseThrow(() -> new IllegalStateException(msg));
+
+				rootModel.getVars().add(discriminatorVar);
+				rootModel.getRequiredVars().add(discriminatorVar);
+				rootModel.getAllVars().add(discriminatorVar);
+			}
 		}
+
+		// remove discriminator property from inherited Discriminator
+		if (discriminatorModel != base) {
+			discriminatorModel
+					.getRequiredVars()
+					.removeIf(codegenProperty -> codegenProperty.getName().equals(discriminatorPropertyName));
+			discriminatorModel
+					.getAllVars()
+					.removeIf(codegenProperty -> codegenProperty.getName().equals(discriminatorPropertyName));
+			discriminatorModel.setDiscriminator(null);
+		}
+	}
+
+	private void setParentVars(final CodegenModel model, final List<CodegenProperty> vars)
+	{
+		model.vendorExtensions.put("x-has-parent-vars", !vars.isEmpty());
+		model.vendorExtensions.put("x-parent-vars", vars);
+		model.vendorExtensions.put("x-parent-classFilename", model.getParentModel().getClassFilename());
 	}
 }
