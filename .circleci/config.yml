@@ -63,13 +63,25 @@ jobs:
       - influxdb-onboarding
       - attach_workspace:
           at: ./build
+      - restore_cache:
+          name: Restoring Pip Cache
+          keys:
+            - &cache-key pip-cache-v1-{{ checksum "build/influxdb-client-python/setup.py" }}
+            - pip-cache-v1
       - run:
           name: "Check Generated Client"
           command: |
             cd ./build/influxdb-client-python
             pip install -e . --user
+            pip install -e .\[extra\] --user
             pip install -e .\[test\] --user
             pytest tests
+      - save_cache:
+          name: Saving Pip Cache
+          key: *cache-key
+          paths:
+            - ".venv"
+            - "~/.cache/pip"
 
 workflows:
   version: 2
