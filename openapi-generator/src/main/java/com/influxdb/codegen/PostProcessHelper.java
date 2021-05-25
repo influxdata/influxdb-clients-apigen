@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
@@ -49,6 +50,16 @@ class PostProcessHelper
 		}
 
 		//
+		// Fix DBRP schema
+		//
+		{
+			ComposedSchema dbrp = (ComposedSchema) openAPI.getComponents().getSchemas().get("DBRP");
+			Schema firstOneOf = dbrp.getOneOf().get(0);
+			Schema newDBRP = new ObjectSchema().properties(dbrp.getProperties()).required(firstOneOf.getRequired());
+			openAPI.getComponents().getSchemas().put("DBRP", newDBRP);
+		}
+
+		//
 		// Use generic scheme for Telegraf plugins instead of TelegrafInputCPU, TelegrafInputMem, ...
 		//
 		{
@@ -78,6 +89,24 @@ class PostProcessHelper
 			Schema schema = openAPI.getComponents().getSchemas().get("NotificationRuleBase");
 			schema.getRequired().removeAll(Arrays.asList("tagRules"));
 		}
+
+		//
+		// Drop empty body
+		//
+		{
+			PathItem pathItem = openAPI.getPaths().get("/tasks/{taskID}/runs/{runID}/retry");
+			pathItem.getPost().requestBody(null);
+		}
+
+		//
+		// Trim description
+		//
+		openAPI.getComponents().getParameters().forEach((s, parameter) -> {
+			String description = parameter.getDescription();
+			if (description != null) {
+				parameter.setDescription(description.trim());
+			}
+		});
 	}
 
 	void postProcessModels(Map<String, Object> allModels) {
@@ -103,6 +132,16 @@ class PostProcessHelper
 				model.interfaces.clear();
 				model.interfaceModels.clear();
 			}
+
+			//
+			// Trim description
+			//
+			model.getAllVars().forEach(var -> {
+				String description = var.getDescription();
+				if (description != null) {
+					var.setDescription(description.trim());
+				}
+			});
 		}
 
 		fixInheritance("Check", Arrays.asList("Deadman", "Custom", "Threshold"), allModels);
@@ -151,6 +190,20 @@ class PostProcessHelper
 
 		if (!"/".equals(url) && url != null) {
 			op.path = url + op.path;
+		}
+
+		//
+		// Trim description.
+		//
+		if (operation.getParameters() != null)
+		{
+			operation.getParameters().forEach(parameter -> {
+				String description = parameter.getDescription();
+				if (description != null)
+				{
+					parameter.description(description.trim());
+				}
+			});
 		}
 	}
 
