@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.swagger.v3.oas.models.OpenAPI;
@@ -53,9 +54,6 @@ class PostProcessHelper
 		{
 			Schema newPropertySchema = new ObjectSchema().additionalProperties(new ObjectSchema());
 			changePropertySchema("config", "TelegrafPlugin", newPropertySchema);
-
-			// remove plugins
-			dropSchemas("TelegrafPluginInput(.+)|TelegrafPluginOutput(.+)|TelegrafRequestPlugin");
 		}
 
 		//
@@ -78,7 +76,7 @@ class PostProcessHelper
 		//
 		{
 			Schema schema = openAPI.getComponents().getSchemas().get("NotificationRuleBase");
-			schema.getRequired().removeAll(Arrays.asList("id", "tagRules"));
+			schema.getRequired().removeAll(Arrays.asList("tagRules"));
 		}
 	}
 
@@ -127,9 +125,10 @@ class PostProcessHelper
 			//
 			if (model.getParent() != null) {
 				CodegenModel parentModel = getModel((HashMap) allModels.get(model.getParent()));
-				model.vendorExtensions.put("x-parent-classFilename", parentModel.getClassFilename());
-				model.vendorExtensions.put("x-has-parent-vars", !parentModel.getVars().isEmpty());
-				model.vendorExtensions.put("x-parent-vars", parentModel.getVars());
+//				model.vendorExtensions.put("x-parent-classFilename", parentModel.getClassFilename());
+//				model.vendorExtensions.put("x-has-parent-vars", !parentModel.getVars().isEmpty());
+//				model.vendorExtensions.put("x-parent-vars", parentModel.getVars());
+				setParentVars(model, parentModel, parentModel.getVars());
 			}
 		}
 
@@ -247,6 +246,39 @@ class PostProcessHelper
 					.map(CodegenDiscriminator.MappedModel::getMappingName)
 					.get();
 
+			// Set default value for type
+			{
+				String discriminatorKeyDefaultValue = "\"" + discriminatorKey + "\"";
+
+				String msg = String.format("The model in discriminator: %s doesn't have a discriminator property: %s",
+						modelInDiscriminator, discriminatorPropertyName);
+				// set to own properties
+				CodegenProperty discriminatorVar = modelInDiscriminator
+						.getRequiredVars()
+						.stream()
+						.filter(it -> it.getName().equals(discriminatorPropertyName))
+						.findFirst()
+						.orElseThrow(() -> new IllegalStateException(msg));
+				discriminatorVar.defaultValue = discriminatorKeyDefaultValue;
+
+				// set to parent vars
+				List<CodegenProperty> parentVars = (List<CodegenProperty>) modelInDiscriminator
+						.getVendorExtensions()
+						.get("x-parent-vars");
+				parentVars.stream()
+					.filter(it -> it.getName().equals(discriminatorPropertyName))
+					.findFirst().map(new Function<CodegenProperty, Void>()
+				{
+					@Override
+					public Void apply(final CodegenProperty codegenProperty)
+					{
+						codegenProperty.defaultValue = discriminatorKeyDefaultValue;
+						return null;
+					}
+				});
+
+			}
+
 			modelInDiscriminator.vendorExtensions.put("x-discriminator-value", discriminatorKey);
 		}
 
@@ -308,8 +340,16 @@ class PostProcessHelper
 
 	private void setParentVars(final CodegenModel model, final List<CodegenProperty> vars)
 	{
-		model.vendorExtensions.put("x-has-parent-vars", !vars.isEmpty());
-		model.vendorExtensions.put("x-parent-vars", vars);
-		model.vendorExtensions.put("x-parent-classFilename", model.getParentModel().getClassFilename());
+		setParentVars(model, model.getParentModel(), vars);
+	}
+
+	private void setParentVars(final CodegenModel model, final CodegenModel parentModel, final List<CodegenProperty> vars)
+	{
+		List<CodegenProperty> cloned = new ArrayList<>();
+		vars.forEach(codegenProperty -> cloned.add(codegenProperty.clone()));
+
+		model.vendorExtensions.put("x-has-parent-vars", !cloned.isEmpty());
+		model.vendorExtensions.put("x-parent-vars", cloned);
+		model.vendorExtensions.put("x-parent-classFilename", parentModel.getClassFilename());
 	}
 }
