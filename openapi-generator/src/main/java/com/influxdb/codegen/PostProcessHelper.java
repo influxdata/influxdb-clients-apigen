@@ -125,9 +125,6 @@ class PostProcessHelper
 			//
 			if (model.getParent() != null) {
 				CodegenModel parentModel = getModel((HashMap) allModels.get(model.getParent()));
-//				model.vendorExtensions.put("x-parent-classFilename", parentModel.getClassFilename());
-//				model.vendorExtensions.put("x-has-parent-vars", !parentModel.getVars().isEmpty());
-//				model.vendorExtensions.put("x-parent-vars", parentModel.getVars());
 				setParentVars(model, parentModel, parentModel.getVars());
 			}
 		}
