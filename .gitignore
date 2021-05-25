@@ -22,3 +22,4 @@ openapi-generator/target
 /openapi-generator/target/
 .DS_Store
 oss.yml
+generate-*-local.sh

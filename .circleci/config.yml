@@ -1,0 +1,80 @@
+version: 2.1
+
+commands:
+  build-generator:
+    steps:
+      - run: mvn -f openapi-generator/pom.xml clean install -DskipTests
+  download-oss-swagger:
+    steps:
+      - run: curl https://raw.githubusercontent.com/influxdata/openapi/master/contracts/oss.yml --output ./oss.yml
+  clone-client:
+    parameters:
+      client:
+        type: string
+    steps:
+      - run:
+          command: |
+            mkdir -p ./build
+            git clone https://github.com/influxdata/<< parameters.client >> ./build/<< parameters.client >>
+
+jobs:
+  generate-python:
+    docker:
+      - image: "circleci/openjdk:8-stretch"
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restoring Maven Cache
+          keys:
+            - &cache-key maven-cache_v1-{{ checksum "openapi-generator/pom.xml" }}
+            - maven-cache_v1
+      - build-generator
+      - download-oss-swagger
+      - clone-client:
+          client: influxdb-client-python
+      - run:
+          name: "Generate Python client"
+          command: |
+            ./generate-python.sh
+      - persist_to_workspace:
+          root: build
+          paths:
+            - ./influxdb-client-python
+      - save_cache:
+          name: Saving Maven Cache
+          key: *cache-key
+          paths:
+            - ~/.m2
+  check-generated-python:
+    docker:
+      - image: "circleci/python:3.6-buster"
+    steps:
+      - attach_workspace:
+          at: ./influxdb-client-python
+      - run:
+          name: "Generate Python client"
+          command: |
+            ls -la ./influxdb-client-python
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - generate-python
+      - check-generated-python:
+          requires:
+            - generate-python
+
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - generate-python
+      - check-generated-python:
+          requires:
+            - generate-python

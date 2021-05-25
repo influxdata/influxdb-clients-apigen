@@ -8,7 +8,7 @@
     <name>influxdb-client-python</name>
     <properties>
         <library>urllib3</library>
-        <swaggerLocation>${project.basedir}/../swagger.yml</swaggerLocation>
+        <swaggerLocation>${project.basedir}/../oss.yml</swaggerLocation>
         <clientVersion>1.11.0dev</clientVersion>
 		<outputLocation>${project.basedir}/../build/influxdb-client-python</outputLocation>
 	</properties>
