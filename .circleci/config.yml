@@ -20,7 +20,7 @@ commands:
       - run:
           command: |
             mkdir -p ./build
-            git clone --single-branch --branch feat/swagger-update https://github.com/influxdata/<< parameters.client >> ./build/<< parameters.client >>
+            git clone --single-branch --branch master https://github.com/influxdata/<< parameters.client >> ./build/<< parameters.client >>
 
 jobs:
   generate-python:
