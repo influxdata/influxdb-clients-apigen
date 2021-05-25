@@ -21,6 +21,7 @@ commands:
           command: |
             mkdir -p ./build
             git clone https://github.com/influxdata/<< parameters.client >> ./build/<< parameters.client >>
+            git checkout -B feat/swagger-update
 
 jobs:
   generate-python:
