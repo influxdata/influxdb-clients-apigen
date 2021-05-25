@@ -1,5 +1,10 @@
 # Swagger code generator for InfluxDB 2.0 client libraries 
 
+[![CircleCI](https://circleci.com/gh/bonitoo-io/influxdb-clients-apigen.svg?style=svg)](https://circleci.com/gh/bonitoo-io/influxdb-clients-apigen)
+[![License](https://img.shields.io/github/license/bonitoo-io/influxdb-clients-apigen.svg)](https://github.com/bonitoo-io/influxdb-clients-apigen/blob/master/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues-raw/bonitoo-io/influxdb-clients-apigen.svg)](https://github.com/bonitoo-io/influxdb-clients-apigen/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr-raw/bonitoo-io/influxdb-clients-apigen.svg)](https://github.com/bonitoo-io/influxdb-clients-apigen/pulls)
+
 This repository contains tools to re-generate API from InfluxDB swagger.yml. 
 
 Supported are following client libraries: 

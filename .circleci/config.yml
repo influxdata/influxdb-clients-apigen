@@ -1,6 +1,11 @@
 version: 2.1
 
 commands:
+  influxdb-onboarding:
+    steps:
+      - run:
+          name: "Post onBoarding request to InfluxDB 2"
+          command: ./scripts/influxdb-onboarding.sh
   build-generator:
     steps:
       - run: mvn -f openapi-generator/pom.xml clean install -DskipTests
@@ -48,13 +53,19 @@ jobs:
   check-generated-python:
     docker:
       - image: "circleci/python:3.6-buster"
+      - image: "influxdb:latest"
+        environment:
+          INFLUXD_HTTP_BIND_ADDRESS: :8086
     steps:
+      - checkout
+      - influxdb-onboarding
       - attach_workspace:
-          at: ./
+          at: ./build
       - run:
           name: "Check Generated Client"
           command: |
-            ls -la ./influxdb-client-python
+            cd ./build/influxdb-client-python
+            git status
 
 workflows:
   version: 2
