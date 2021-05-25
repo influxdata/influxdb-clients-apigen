@@ -53,6 +53,8 @@ jobs:
   check-generated-python:
     docker:
       - image: "circleci/python:3.6-buster"
+        environment:
+          PIPENV_VENV_IN_PROJECT: true
       - image: "influxdb:latest"
         environment:
           INFLUXD_HTTP_BIND_ADDRESS: :8086
@@ -65,7 +67,9 @@ jobs:
           name: "Check Generated Client"
           command: |
             cd ./build/influxdb-client-python
-            git status
+            pip install -e . --user
+            pip install -e .\[test\] --user
+            pytest tests
 
 workflows:
   version: 2
