@@ -50,9 +50,9 @@ jobs:
       - image: "circleci/python:3.6-buster"
     steps:
       - attach_workspace:
-          at: ./influxdb-client-python
+          at: ./
       - run:
-          name: "Generate Python client"
+          name: "Check Generated Client"
           command: |
             ls -la ./influxdb-client-python
 
