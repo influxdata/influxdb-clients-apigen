@@ -83,14 +83,6 @@ class PostProcessHelper
 		}
 
 		//
-		// Fix required parameters
-		//
-		{
-			Schema schema = openAPI.getComponents().getSchemas().get("NotificationRuleBase");
-			schema.getRequired().removeAll(Arrays.asList("tagRules"));
-		}
-
-		//
 		// Drop empty body
 		//
 		{
