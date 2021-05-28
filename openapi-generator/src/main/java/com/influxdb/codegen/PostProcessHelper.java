@@ -16,6 +16,7 @@ import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import org.intellij.lang.annotations.Language;
 import org.openapitools.codegen.CodegenDiscriminator;
@@ -47,6 +48,14 @@ class PostProcessHelper
 			Schema schema = ((ComposedSchema) mediaType.getSchema()).getOneOf().get(0);
 			mediaType.schema(schema);
 			dropSchemas("InfluxQLQuery");
+		}
+
+		//
+		// Use Generic schema for Query parameters
+		//
+		{
+			Schema newPropertySchema = new ObjectSchema().additionalProperties(new ObjectSchema());
+			changePropertySchema("params", "Query", newPropertySchema);
 		}
 
 		//
@@ -83,11 +92,16 @@ class PostProcessHelper
 		}
 
 		//
-		// Drop empty body
+		// Change type of generic Object to String
+		//
+		// see: https://github.com/influxdata/openapi/pull/90
 		//
 		{
 			PathItem pathItem = openAPI.getPaths().get("/tasks/{taskID}/runs/{runID}/retry");
-			pathItem.getPost().requestBody(null);
+			pathItem.getPost()
+					.getRequestBody()
+					.getContent()
+					.values().forEach(mediaType -> mediaType.setSchema(new StringSchema()));
 		}
 
 		//
