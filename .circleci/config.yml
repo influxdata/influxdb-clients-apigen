@@ -1,0 +1,107 @@
+version: 2.1
+
+commands:
+  influxdb-onboarding:
+    steps:
+      - run:
+          name: "Post onBoarding request to InfluxDB 2"
+          command: ./scripts/influxdb-onboarding.sh
+  build-generator:
+    steps:
+      - run: mvn -f openapi-generator/pom.xml clean install -DskipTests
+  download-oss-swagger:
+    steps:
+      - run: curl https://raw.githubusercontent.com/influxdata/openapi/master/contracts/oss.yml --output ./oss.yml
+  clone-client:
+    parameters:
+      client:
+        type: string
+    steps:
+      - run:
+          command: |
+            mkdir -p ./build
+            git clone --single-branch --branch master https://github.com/influxdata/<< parameters.client >> ./build/<< parameters.client >>
+
+jobs:
+  generate-python:
+    docker:
+      - image: "circleci/openjdk:8-stretch"
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restoring Maven Cache
+          keys:
+            - &cache-key maven-cache_v1-{{ checksum "openapi-generator/pom.xml" }}
+            - maven-cache_v1
+      - build-generator
+      - download-oss-swagger
+      - clone-client:
+          client: influxdb-client-python
+      - run:
+          name: "Generate Python client"
+          command: |
+            ./generate-python.sh
+      - persist_to_workspace:
+          root: build
+          paths:
+            - ./influxdb-client-python
+      - save_cache:
+          name: Saving Maven Cache
+          key: *cache-key
+          paths:
+            - ~/.m2
+  check-generated-python:
+    docker:
+      - image: "circleci/python:3.6-buster"
+        environment:
+          PIPENV_VENV_IN_PROJECT: true
+      - image: "influxdb:latest"
+        environment:
+          INFLUXD_HTTP_BIND_ADDRESS: :8086
+    steps:
+      - checkout
+      - influxdb-onboarding
+      - attach_workspace:
+          at: ./build
+      - restore_cache:
+          name: Restoring Pip Cache
+          keys:
+            - &cache-key pip-cache-v1-{{ checksum "build/influxdb-client-python/setup.py" }}
+            - pip-cache-v1
+      - run:
+          name: "Check Generated Client"
+          command: |
+            cd ./build/influxdb-client-python
+            pip install -e . --user
+            pip install -e .\[extra\] --user
+            pip install -e .\[test\] --user
+            pytest tests
+      - save_cache:
+          name: Saving Pip Cache
+          key: *cache-key
+          paths:
+            - ".venv"
+            - "~/.cache/pip"
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - generate-python
+      - check-generated-python:
+          requires:
+            - generate-python
+
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - generate-python
+      - check-generated-python:
+          requires:
+            - generate-python
