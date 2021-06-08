@@ -119,6 +119,27 @@ class PostProcessHelper
 		});
 	}
 
+	public void postProcessModel(final CodegenModel codegenModel)
+	{
+		//
+		// Set default values for Enum Variables
+		//
+		codegenModel.getAllVars().stream()
+				.filter(property -> property.isEnum)
+				.forEach(codegenProperty -> {
+					if (codegenProperty.required && codegenProperty.defaultValue == null) {
+						List values = (List) codegenProperty.allowableValues.get("values");
+						// enum has only one value => default value
+						if (values.size() == 1)
+						{
+							codegenProperty.defaultValue = (String) values.stream().findFirst().orElse(null);
+						}
+					}
+
+					generator.updateCodegenPropertyEnum(codegenProperty);
+				});
+	}
+
 	void postProcessModels(Map<String, Object> allModels)
 	{
 

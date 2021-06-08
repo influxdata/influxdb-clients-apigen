@@ -3,6 +3,8 @@ package com.influxdb.codegen;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.openapitools.codegen.CodegenProperty;
+
 /**
  * @author Jakub Bednar (08/06/2021 15:39)
  */
@@ -15,4 +17,6 @@ public interface InfluxGenerator
 
 	@Nullable
 	String optionalDatatypeKeyword();
+
+	void updateCodegenPropertyEnum(CodegenProperty codegenProperty);
 }
