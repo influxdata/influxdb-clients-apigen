@@ -8,11 +8,12 @@ import java.util.stream.Collectors;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Schema;
+import org.jetbrains.annotations.NotNull;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.languages.PythonClientCodegen;
 import org.openapitools.codegen.utils.StringUtils;
 
-public class InfluxPythonGenerator extends PythonClientCodegen {
+public class InfluxPythonGenerator extends PythonClientCodegen implements InfluxGenerator  {
 
 	private PostProcessHelper postProcessHelper;
 
@@ -44,10 +45,10 @@ public class InfluxPythonGenerator extends PythonClientCodegen {
 	@Override
 	public void setGlobalOpenAPI(final OpenAPI openAPI)
 	{
-		postProcessHelper = new PostProcessHelper(openAPI);
-		postProcessHelper.postProcessOpenAPI();
-
 		super.setGlobalOpenAPI(openAPI);
+
+		postProcessHelper = new PostProcessHelper(this);
+		postProcessHelper.postProcessOpenAPI();
 	}
 
 	@Override
@@ -58,7 +59,6 @@ public class InfluxPythonGenerator extends PythonClientCodegen {
 
 		return op;
 	}
-
 
 	@Override
     public void processOpts() {
@@ -133,5 +133,18 @@ public class InfluxPythonGenerator extends PythonClientCodegen {
 		}
 
 		return modelName;
+	}
+
+	@NotNull
+	@Override
+	public OpenAPI getOpenAPI()
+	{
+		return globalOpenAPI;
+	}
+
+	@Override
+	public String toEnumConstructorDefaultValue(final String value, final String datatype)
+	{
+		return "\"" + value + "\"";
 	}
 }
