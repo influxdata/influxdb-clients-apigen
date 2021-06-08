@@ -9,6 +9,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Schema;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.languages.PythonClientCodegen;
 import org.openapitools.codegen.utils.StringUtils;
@@ -55,7 +56,7 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
 	public CodegenOperation fromOperation(String path, String httpMethod, Operation operation, Map<String, Schema> definitions, OpenAPI openAPI) {
 
 		CodegenOperation op = super.fromOperation(path, httpMethod, operation, definitions, openAPI);
-		postProcessHelper.postProcessOperation(path, operation, op);
+		postProcessHelper.postProcessOperation(path, operation, op, definitions);
 
 		return op;
 	}
@@ -146,5 +147,12 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
 	public String toEnumConstructorDefaultValue(final String value, final String datatype)
 	{
 		return "\"" + value + "\"";
+	}
+
+	@Nullable
+	@Override
+	public String optionalDatatypeKeyword()
+	{
+		return null;
 	}
 }

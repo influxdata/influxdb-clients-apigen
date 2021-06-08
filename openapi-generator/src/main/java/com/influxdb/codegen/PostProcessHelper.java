@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -200,7 +200,7 @@ class PostProcessHelper
 
 	}
 
-	void postProcessOperation(String path, Operation operation, CodegenOperation op)
+	void postProcessOperation(String path, Operation operation, CodegenOperation op, final Map<String, Schema> definitions)
 	{
 		//
 		// Set correct path for /health, /ready, /setup ...
@@ -229,6 +229,22 @@ class PostProcessHelper
 			op.path = url + op.path;
 		}
 
+		//
+		// Set Optional data type for enum without default value.
+		//
+		String optionalDatatypeKeyword = generator.optionalDatatypeKeyword();
+		if (optionalDatatypeKeyword != null)
+		{
+			op.allParams
+					.stream()
+					.filter(parameter -> parameter.defaultValue == null && !parameter.required && definitions.containsKey(parameter.dataType))
+					.filter(parameter -> {
+						List enums = definitions.get(parameter.dataType).getEnum();
+						return enums != null && !enums.isEmpty();
+					})
+					.filter(parameter -> !parameter.dataType.endsWith(optionalDatatypeKeyword))
+					.forEach(parameter -> parameter.dataType += optionalDatatypeKeyword);
+		}
 		//
 		// Trim description.
 		//
@@ -455,17 +471,15 @@ class PostProcessHelper
 
 	private void setReadWriteWars(final CodegenModel model, final List<CodegenProperty> parentVars)
 	{
-		List<String> stringStream = model.getReadWriteVars().stream().map(CodegenProperty::getName).collect(Collectors.toList());
-		cloneVars(parentVars).forEach(new Consumer<CodegenProperty>()
-		{
-			@Override
-			public void accept(final CodegenProperty codegenProperty)
+		Set<String> readWriteVars = model.getReadWriteVars().stream()
+				.map(CodegenProperty::getName)
+				.collect(Collectors.toSet());
+		cloneVars(parentVars).forEach(codegenProperty -> {
+			if (readWriteVars.contains(codegenProperty.getName()))
 			{
-				if (!stringStream.contains(codegenProperty.getName()))
-				{
-					model.getReadWriteVars().add(codegenProperty);
-				}
+				return;
 			}
+			model.getReadWriteVars().add(codegenProperty);
 		});
 	}
 
