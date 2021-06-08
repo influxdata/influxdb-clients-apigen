@@ -23,9 +23,12 @@ commands:
             git clone --single-branch --branch master https://github.com/influxdata/<< parameters.client >> ./build/<< parameters.client >>
 
 jobs:
-  generate-python:
+  generate-client:
     docker:
       - image: "circleci/openjdk:8-stretch"
+    parameters:
+      client:
+        type: string
     steps:
       - checkout
       - restore_cache:
@@ -36,15 +39,15 @@ jobs:
       - build-generator
       - download-oss-swagger
       - clone-client:
-          client: influxdb-client-python
+          client: influxdb-client-<< parameters.client >>
       - run:
-          name: "Generate Python client"
+          name: "Generate << parameters.client >> client"
           command: |
-            ./generate-python.sh
+            ./generate-<< parameters.client >>.sh
       - persist_to_workspace:
           root: build
           paths:
-            - ./influxdb-client-python
+            - ./influxdb-client-<< parameters.client >>
       - save_cache:
           name: Saving Maven Cache
           key: *cache-key
@@ -87,7 +90,12 @@ workflows:
   version: 2
   build:
     jobs:
-      - generate-python
+      - generate-client:
+          name: generate-python
+          client: python
+      - generate-client:
+          name: generate-csharp
+          client: csharp
       - check-generated-python:
           requires:
             - generate-python
@@ -101,7 +109,12 @@ workflows:
               only:
                 - master
     jobs:
-      - generate-python
+      - generate-client:
+          name: generate-python
+          client: python
+      - generate-client:
+          name: generate-csharp
+          client: csharp
       - check-generated-python:
           requires:
             - generate-python
