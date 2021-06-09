@@ -28,6 +28,7 @@ import org.openapitools.codegen.CodegenDiscriminator;
 import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenProperty;
+import org.openapitools.codegen.InlineModelResolver;
 
 /**
  * @author Jakub Bednar (18/05/2021 13:20)
@@ -162,6 +163,36 @@ class PostProcessHelper
 			Schema telegrafPlugin = openAPI.getComponents().getSchemas().get("TelegrafPlugin");
 			StringSchema type = (StringSchema) telegrafPlugin.getProperties().get("type");
 			type._enum(Arrays.asList("inputs", "outputs", "aggregators", "processors"));
+		}
+
+		//
+		// Correctly generate inline Objects = AuthorizationLinks
+		//
+		{
+			InlineModelResolver inlineModelResolver = new InlineModelResolver();
+			inlineModelResolver.flatten(openAPI);
+
+			String[] schemaNames = openAPI.getComponents().getSchemas().keySet().toArray(new String[0]);
+			for (String schemaName : schemaNames)
+			{
+
+				Schema schema = openAPI.getComponents().getSchemas().get(schemaName);
+				if (schema instanceof ComposedSchema)
+				{
+					List<Schema> allOf = ((ComposedSchema) schema).getAllOf();
+					if (allOf != null)
+					{
+						allOf.forEach(child -> {
+
+							if (child instanceof ObjectSchema)
+							{
+
+								inlineModelResolver.flattenProperties(child.getProperties(), schemaName);
+							}
+						});
+					}
+				}
+			}
 		}
 
 		//
