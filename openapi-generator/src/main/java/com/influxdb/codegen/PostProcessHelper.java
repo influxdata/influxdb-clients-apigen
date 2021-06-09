@@ -156,6 +156,15 @@ class PostProcessHelper
 		}
 
 		//
+		// Specify possible types for TelegrafPlugin
+		//
+		{
+			Schema telegrafPlugin = openAPI.getComponents().getSchemas().get("TelegrafPlugin");
+			StringSchema type = (StringSchema) telegrafPlugin.getProperties().get("type");
+			type._enum(Arrays.asList("inputs", "outputs", "aggregators", "processors"));
+		}
+
+		//
 		// Trim description
 		//
 		openAPI.getComponents().getParameters().forEach((s, parameter) -> {
