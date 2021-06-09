@@ -7,10 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import io.swagger.v3.oas.models.OpenAPI;
@@ -24,13 +21,12 @@ import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.HeaderParameter;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
+import org.apache.commons.lang3.StringUtils;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
 import org.openapitools.codegen.CodegenDiscriminator;
 import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
-import org.openapitools.codegen.CodegenParameter;
 import org.openapitools.codegen.CodegenProperty;
 
 /**
@@ -115,6 +111,23 @@ class PostProcessHelper
 		}
 
 		//
+		// Drop entity with multiple inheritance
+		//
+		if (generator.compileTimeInheritance()) {
+			Arrays.asList("/checks", "/notificationEndpoints", "/notificationRules").forEach(s -> {
+				Operation post = openAPI.getPaths().get(s).getPost();
+
+				Schema mediaType = post.getRequestBody().getContent().get("application/json").getSchema();
+				// '#/components/schemas/PostCheck'
+				String $ref = mediaType.get$ref();
+				// '#/components/schemas/Post'
+				mediaType.set$ref($ref.replace("Post", ""));
+				// 'PostCheck'
+				dropSchemas(StringUtils.substringAfterLast($ref, "/"));
+			});
+		}
+
+		//
 		// Authorization header for operation with Basic Security
 		//
 		{
@@ -188,14 +201,16 @@ class PostProcessHelper
 			//
 			if (!model.hasVars && model.interfaceModels != null)
 			{
-				if (model.getName().matches("(.*)Check(.*)|(.*)Notification(.*)"))
+				if (model.getName().matches("(.*)Check(.*)|(.*)Threshold(.*)|(.*)Notification(.*)"))
 				{
 					continue;
 				}
 
 				for (CodegenModel interfaceModel : model.interfaceModels)
 				{
-					interfaceModel.setParent(model.classname);
+					if (interfaceModel.getParent() == null) {
+						interfaceModel.setParent(model.classname);
+					}
 				}
 
 				model.interfaces.clear();
@@ -398,13 +413,30 @@ class PostProcessHelper
 				setExtensionParentVars(modelInDiscriminator, objects);
 			}
 
-			discriminatorModelBase.setParentModel(discriminatorModel);
-			discriminatorModelBase.setParent(discriminatorModel.getName());
-			discriminatorModelBase.setParentSchema(discriminatorModel.getName());
-			setToParentVars(discriminatorModelBase, discriminatorModel.getParentVars());
-			setReadWriteWars(discriminatorModelBase, discriminatorModel.getParentVars());
+			if (generator.compileTimeInheritance())
+			{
+				discriminatorModelBase.setParentModel(schema);
+				discriminatorModelBase.setParent(schema.getName());
+				discriminatorModelBase.setParentSchema(schema.getName());
 
-			setExtensionParentVars(discriminatorModelBase, base.getVars());
+				List<CodegenProperty> parentVars = schema.getParentModel().getReadWriteVars();
+				setToParentVars(discriminatorModelBase, parentVars);
+				setExtensionParentVars(discriminatorModelBase, parentVars);
+
+				setReadWriteWars(discriminatorModelBase, parentVars);
+
+				discriminatorModelBase = schema;
+			}
+
+			if (discriminatorModelBase != discriminatorModel)
+			{
+				discriminatorModelBase.setParentModel(discriminatorModel);
+				discriminatorModelBase.setParent(discriminatorModel.getName());
+				discriminatorModelBase.setParentSchema(discriminatorModel.getName());
+				setToParentVars(discriminatorModelBase, discriminatorModel.getParentVars());
+				setExtensionParentVars(discriminatorModelBase, base.getVars());
+				setReadWriteWars(discriminatorModelBase, discriminatorModel.getParentVars());
+			}
 
 			// set correct name for discriminator
 			String discriminatorKey = discriminator.getMappedModels()
@@ -467,38 +499,41 @@ class PostProcessHelper
 			rootModel.setChildren(modelsInDiscriminator);
 			rootModel.hasChildren = true;
 
-			// If there is no intermediate entity, than leave current parent schema
-			if (allModels.containsKey(name + "Discriminator"))
+			if (!generator.compileTimeInheritance())
 			{
-				rootModel.setParentSchema(null);
-				rootModel.setParent(null);
-			}
+				// If there is no intermediate entity, than leave current parent schema
+				if (allModels.containsKey(name + "Discriminator"))
+				{
+					rootModel.setParentSchema(null);
+					rootModel.setParent(null);
+				}
 
-			boolean presentDiscriminatorVar = rootModel
-					.getRequiredVars()
-					.stream()
-					.anyMatch(codegenProperty -> codegenProperty.getBaseName().equals(discriminatorPropertyName));
-
-			// there isn't discriminator property => add from discriminator model
-			if (!presentDiscriminatorVar)
-			{
-				String msg = String.format("The discriminator model: %s doesn't have a discriminator property: %s",
-						discriminatorModel, discriminatorPropertyName);
-
-				CodegenProperty discriminatorVar = discriminatorModel
+				boolean presentDiscriminatorVar = rootModel
 						.getRequiredVars()
 						.stream()
-						.filter(it -> it.getBaseName().equals(discriminatorPropertyName))
-						.findFirst()
-						.orElseThrow(() -> new IllegalStateException(msg));
+						.anyMatch(codegenProperty -> codegenProperty.getBaseName().equals(discriminatorPropertyName));
 
-				CodegenProperty discriminatorVarCloned = discriminatorVar.clone();
-				discriminatorVarCloned.hasMore = false;
+				// there isn't discriminator property => add from discriminator model
+				if (!presentDiscriminatorVar)
+				{
+					String msg = String.format("The discriminator model: %s doesn't have a discriminator property: %s",
+							discriminatorModel, discriminatorPropertyName);
 
-				rootModel.getVars().add(discriminatorVarCloned);
-				rootModel.getRequiredVars().add(discriminatorVarCloned);
-				rootModel.getReadWriteVars().add(discriminatorVarCloned);
-				rootModel.getAllVars().add(discriminatorVarCloned);
+					CodegenProperty discriminatorVar = discriminatorModel
+							.getRequiredVars()
+							.stream()
+							.filter(it -> it.getBaseName().equals(discriminatorPropertyName))
+							.findFirst()
+							.orElseThrow(() -> new IllegalStateException(msg));
+
+					CodegenProperty discriminatorVarCloned = discriminatorVar.clone();
+					discriminatorVarCloned.hasMore = false;
+
+					rootModel.getVars().add(discriminatorVarCloned);
+					rootModel.getRequiredVars().add(discriminatorVarCloned);
+					rootModel.getReadWriteVars().add(discriminatorVarCloned);
+					rootModel.getAllVars().add(discriminatorVarCloned);
+				}
 			}
 		}
 

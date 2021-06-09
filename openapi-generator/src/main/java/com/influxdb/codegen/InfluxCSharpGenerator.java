@@ -161,6 +161,12 @@ public class InfluxCSharpGenerator extends CSharpClientCodegen implements Influx
 		return "?";
 	}
 
+	@Override
+	public boolean compileTimeInheritance()
+	{
+		return true;
+	}
+
 	private boolean isCommonName(final String modelName) {
         //noinspection RedundantCollectionOperation
         return Collections.singleton("Task").contains(modelName);

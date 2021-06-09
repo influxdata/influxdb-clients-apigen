@@ -19,4 +19,6 @@ public interface InfluxGenerator
 	String optionalDatatypeKeyword();
 
 	void updateCodegenPropertyEnum(CodegenProperty codegenProperty);
+
+	boolean compileTimeInheritance();
 }

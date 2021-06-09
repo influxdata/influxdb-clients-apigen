@@ -155,4 +155,10 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
 	{
 		return null;
 	}
+
+	@Override
+	public boolean compileTimeInheritance()
+	{
+		return false;
+	}
 }
