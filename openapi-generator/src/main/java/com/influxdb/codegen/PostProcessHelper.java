@@ -7,7 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import io.swagger.v3.oas.models.OpenAPI;
@@ -18,12 +21,16 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.parameters.HeaderParameter;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
 import org.openapitools.codegen.CodegenDiscriminator;
 import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
+import org.openapitools.codegen.CodegenParameter;
 import org.openapitools.codegen.CodegenProperty;
 
 /**
@@ -108,6 +115,34 @@ class PostProcessHelper
 		}
 
 		//
+		// Authorization header for operation with Basic Security
+		//
+		{
+			openAPI.getPaths().forEach((path, pathItem) -> {
+				pathItem
+						.readOperations()
+						.forEach(operation -> {
+							if (operation != null && operation.getSecurity() != null && !operation.getSecurity().isEmpty())
+							{
+								boolean containsBasicAuth = operation
+										.getSecurity()
+										.stream()
+										.anyMatch(securityRequirement -> securityRequirement.containsKey("BasicAuth"));
+
+								if (containsBasicAuth)
+								{
+									Parameter authorization = new HeaderParameter()
+											.name("Authorization")
+											.schema(new StringSchema())
+											.description("An auth credential for the Basic scheme");
+									operation.addParametersItem(authorization);
+								}
+							}
+						});
+			});
+		}
+
+		//
 		// Trim description
 		//
 		openAPI.getComponents().getParameters().forEach((s, parameter) -> {
@@ -127,7 +162,8 @@ class PostProcessHelper
 		codegenModel.getAllVars().stream()
 				.filter(property -> property.isEnum)
 				.forEach(codegenProperty -> {
-					if (codegenProperty.required && codegenProperty.defaultValue == null) {
+					if (codegenProperty.required && codegenProperty.defaultValue == null)
+					{
 						List values = (List) codegenProperty.allowableValues.get("values");
 						// enum has only one value => default value
 						if (values.size() == 1)
@@ -266,6 +302,7 @@ class PostProcessHelper
 					.filter(parameter -> !parameter.dataType.endsWith(optionalDatatypeKeyword))
 					.forEach(parameter -> parameter.dataType += optionalDatatypeKeyword);
 		}
+
 		//
 		// Trim description.
 		//
