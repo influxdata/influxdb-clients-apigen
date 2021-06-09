@@ -130,6 +130,14 @@ public class InfluxCSharpGenerator extends CSharpClientCodegen implements Influx
 			return "PermissionResource";
 		}
 
+		if ("UserResponse".equals(modelName)) {
+			return "User";
+		}
+
+		if ("User".equals(modelName)) {
+			return "PostUser";
+		}
+
         return modelName;
     }
 
