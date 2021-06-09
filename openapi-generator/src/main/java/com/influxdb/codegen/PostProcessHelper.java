@@ -168,6 +168,7 @@ class PostProcessHelper
 		//
 		// Correctly generate inline Objects = AuthorizationLinks
 		//
+		if (generator.compileTimeInheritance())
 		{
 			InlineModelResolver inlineModelResolver = new InlineModelResolver();
 			inlineModelResolver.flatten(openAPI);
@@ -186,7 +187,6 @@ class PostProcessHelper
 
 							if (child instanceof ObjectSchema)
 							{
-
 								inlineModelResolver.flattenProperties(child.getProperties(), schemaName);
 							}
 						});
