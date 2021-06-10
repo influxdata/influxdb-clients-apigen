@@ -3,17 +3,23 @@ package com.influxdb.codegen;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import com.google.common.collect.Lists;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ComposedSchema;
+import io.swagger.v3.oas.models.media.Discriminator;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -21,6 +27,7 @@ import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.HeaderParameter;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
@@ -29,6 +36,7 @@ import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenProperty;
 import org.openapitools.codegen.InlineModelResolver;
+import org.openapitools.codegen.utils.ModelUtils;
 
 /**
  * @author Jakub Bednar (18/05/2021 13:20)
@@ -88,6 +96,9 @@ class PostProcessHelper
 		//
 		{
 			dropSchemas("Geo(.*)View(.*)");
+			((ComposedSchema) openAPI.getComponents().getSchemas().get("ViewProperties"))
+					.getOneOf()
+					.removeIf(schema -> schema.get$ref().endsWith("GeoViewProperties"));
 		}
 
 		//
@@ -114,7 +125,8 @@ class PostProcessHelper
 		//
 		// Drop entity with multiple inheritance
 		//
-		if (generator.compileTimeInheritance()) {
+		if (generator.compileTimeInheritance())
+		{
 			Arrays.asList("/checks", "/notificationEndpoints", "/notificationRules").forEach(s -> {
 				Operation post = openAPI.getPaths().get(s).getPost();
 
@@ -198,12 +210,12 @@ class PostProcessHelper
 		});
 	}
 
-	public void postProcessModel(final CodegenModel codegenModel)
+	public void postProcessModel(final CodegenModel model, final Schema modelSchema, final Map<String, Schema> allDefinitions)
 	{
 		//
 		// Set default values for Enum Variables
 		//
-		codegenModel.getAllVars().stream()
+		model.getAllVars().stream()
 				.filter(property -> property.isEnum)
 				.forEach(codegenProperty -> {
 					if (codegenProperty.required && codegenProperty.defaultValue == null)
@@ -218,6 +230,182 @@ class PostProcessHelper
 
 					generator.updateCodegenPropertyEnum(codegenProperty);
 				});
+
+		//
+		// Create adapters properties discriminator
+		//
+		{
+			Map properties = modelSchema.getProperties();
+			if (properties != null)
+			{
+				properties
+						.forEach((BiConsumer<String, Schema>) (property, propertySchema) -> {
+
+							Schema schema = propertySchema;
+
+							//
+							// Reference to List of Object
+							//
+							if (schema instanceof ArraySchema)
+							{
+								String ref = ((ArraySchema) schema).getItems().get$ref();
+								if (ref != null)
+								{
+									String refSchemaName = ModelUtils.getSimpleRef(ref);
+									Schema refSchema = allDefinitions.get(refSchemaName);
+
+									if (refSchema instanceof ComposedSchema)
+									{
+										if (((ComposedSchema) refSchema).getOneOf() != null)
+										{
+											schema = refSchema;
+										}
+									}
+								}
+							}
+
+							//
+							// Reference to Object
+							//
+							else if (schema.get$ref() != null)
+							{
+								String refSchemaName = ModelUtils.getSimpleRef(schema.get$ref());
+								Schema refSchema = allDefinitions.get(refSchemaName);
+
+								if (refSchema instanceof ComposedSchema)
+								{
+									if (((ComposedSchema) refSchema).getOneOf() != null)
+									{
+										schema = refSchema;
+									}
+								}
+							}
+
+							final Discriminator apiDiscriminator = schema.getDiscriminator();
+
+							CodegenProperty codegenProperty = getCodegenProperty(model, property);
+							if (codegenProperty != null)
+							{
+								String adapterName = model.getName() + codegenProperty.nameInCamelCase + "Adapter";
+								PostProcessHelper.TypeAdapter typeAdapter = new PostProcessHelper.TypeAdapter();
+								typeAdapter.classname = adapterName;
+
+								Map<String, PostProcessHelper.TypeAdapter> adapters = (HashMap<String, PostProcessHelper.TypeAdapter>) model.vendorExtensions
+										.getOrDefault("x-type-adapters", new HashMap<String, PostProcessHelper.TypeAdapter>());
+
+								if (apiDiscriminator != null)
+								{
+
+									apiDiscriminator.getMapping().forEach((mappingKey, refSchemaName) ->
+									{
+										typeAdapter.isArray = propertySchema instanceof ArraySchema;
+										typeAdapter.discriminator = Stream.of(apiDiscriminator.getPropertyName())
+												.map(v -> "\"" + v + "\"")
+												.collect(Collectors.joining(", "));
+										PostProcessHelper.TypeAdapterItem typeAdapterItem = new PostProcessHelper.TypeAdapterItem();
+										typeAdapterItem.discriminatorValue = Stream.of(mappingKey).map(v -> "\"" + v + "\"").collect(Collectors.joining(", "));
+										typeAdapterItem.classname = ModelUtils.getSimpleRef(refSchemaName);
+										typeAdapter.items.add(typeAdapterItem);
+									});
+								}
+
+								if (apiDiscriminator == null && schema instanceof ComposedSchema)
+								{
+
+									for (Schema oneOf : getOneOf(schema, allDefinitions))
+									{
+
+										String refSchemaName;
+										Schema refSchema;
+
+										if (oneOf.get$ref() == null)
+										{
+											refSchema = oneOf;
+											refSchemaName = oneOf.getName();
+										}
+										else
+										{
+											refSchemaName = ModelUtils.getSimpleRef(oneOf.get$ref());
+											refSchema = allDefinitions.get(refSchemaName);
+											if (refSchema instanceof ComposedSchema)
+											{
+												List<Schema> schemaList = ((ComposedSchema) refSchema).getAllOf().stream()
+														.map(it -> getObjectSchemas(it, allDefinitions))
+														.flatMap(Collection::stream)
+														.filter(it -> it instanceof ObjectSchema).collect(Collectors.toList());
+												refSchema = schemaList
+														.stream()
+														.filter(it -> {
+															for (Schema ps : (Collection<Schema>) it.getProperties().values())
+															{
+																if (ps.getEnum() != null && ps.getEnum().size() == 1)
+																{
+																	return true;
+																}
+															}
+															return false;
+														})
+														.findFirst()
+														.orElse(schemaList.get(0));
+											}
+										}
+
+										String[] keys = getDiscriminatorKeys(schema, refSchema);
+
+										String[] discriminator = new String[]{};
+										String[] discriminatorValue = new String[]{};
+
+										for (String key : keys)
+										{
+											Schema keyScheme = (Schema) refSchema.getProperties().get(key);
+											if (keyScheme.get$ref() != null)
+											{
+												keyScheme = allDefinitions.get(ModelUtils.getSimpleRef(keyScheme.get$ref()));
+											}
+
+											if (!(keyScheme instanceof StringSchema))
+											{
+												continue;
+											}
+											else
+											{
+
+												if (((StringSchema) keyScheme).getEnum() != null)
+												{
+													discriminatorValue = ArrayUtils.add(discriminatorValue, ((StringSchema) keyScheme).getEnum().get(0));
+												}
+												else
+												{
+													discriminatorValue = ArrayUtils.add(discriminatorValue, refSchemaName);
+												}
+											}
+
+											discriminator = ArrayUtils.add(discriminator, key);
+										}
+
+										typeAdapter.isArray = propertySchema instanceof ArraySchema;
+										typeAdapter.discriminator = Stream.of(discriminator).map(v -> "\"" + v + "\"").collect(Collectors.joining(", "));
+										PostProcessHelper.TypeAdapterItem typeAdapterItem = new PostProcessHelper.TypeAdapterItem();
+										typeAdapterItem.discriminatorValue = Stream.of(discriminatorValue).map(v -> "\"" + v + "\"").collect(Collectors.joining(", "));
+										typeAdapterItem.classname = refSchemaName;
+										typeAdapter.items.add(typeAdapterItem);
+									}
+								}
+
+								if (!typeAdapter.items.isEmpty())
+								{
+
+									codegenProperty.vendorExtensions.put("x-has-type-adapter", Boolean.TRUE);
+									codegenProperty.vendorExtensions.put("x-type-adapter", adapterName);
+
+									adapters.put(adapterName, typeAdapter);
+
+									model.vendorExtensions.put("x-type-adapters", adapters);
+								}
+							}
+						});
+			}
+		}
 	}
 
 	void postProcessModels(Map<String, Object> allModels)
@@ -239,7 +427,8 @@ class PostProcessHelper
 
 				for (CodegenModel interfaceModel : model.interfaceModels)
 				{
-					if (interfaceModel.getParent() == null) {
+					if (interfaceModel.getParent() == null)
+					{
 						interfaceModel.setParent(model.classname);
 					}
 				}
@@ -638,5 +827,109 @@ class PostProcessHelper
 			clonedVars.add(cloned);
 		});
 		return clonedVars;
+	}
+
+	private String[] getDiscriminatorKeys(final Schema schema, final Schema refSchema)
+	{
+		List<String> keys = new ArrayList<>();
+
+		if (refSchema.getProperties() == null)
+		{
+			keys.add(schema.getDiscriminator().getPropertyName());
+		}
+		else
+		{
+			refSchema.getProperties().forEach((BiConsumer<String, Schema>) (property, propertySchema) -> {
+
+				if (keys.isEmpty())
+				{
+					keys.add(property);
+
+				}
+				else if (propertySchema.getEnum() != null && propertySchema.getEnum().size() == 1)
+				{
+					keys.add(property);
+				}
+			});
+		}
+
+		return keys.toArray(new String[0]);
+	}
+
+	private List<Schema> getOneOf(final Schema schema, final Map<String, Schema> allDefinitions)
+	{
+
+		List<Schema> schemas = new ArrayList<>();
+
+		if (schema instanceof ComposedSchema)
+		{
+
+			ComposedSchema composedSchema = (ComposedSchema) schema;
+			for (Schema oneOfSchema : composedSchema.getOneOf())
+			{
+
+				if (oneOfSchema.get$ref() != null)
+				{
+
+					Schema refSchema = allDefinitions.get(ModelUtils.getSimpleRef(oneOfSchema.get$ref()));
+					if (refSchema instanceof ComposedSchema && ((ComposedSchema) refSchema).getOneOf() != null)
+					{
+						schemas.addAll(((ComposedSchema) refSchema).getOneOf());
+					}
+					else
+					{
+						schemas.add(oneOfSchema);
+					}
+				}
+			}
+		}
+
+		return schemas;
+	}
+
+	@javax.annotation.Nullable
+	private CodegenProperty getCodegenProperty(final CodegenModel model, final String propertyName)
+	{
+		return model.vars.stream()
+				.filter(property -> property.baseName.equals(propertyName))
+				.findFirst().orElse(null);
+	}
+
+	private List<Schema> getObjectSchemas(final Schema schema, final Map<String, Schema> allDefinitions)
+	{
+		if (schema instanceof ObjectSchema)
+		{
+			return Lists.newArrayList(schema);
+		}
+		else if (schema instanceof ComposedSchema)
+		{
+			List<Schema> allOf = ((ComposedSchema) schema).getAllOf();
+			if (allOf != null)
+			{
+				return allOf.stream().map(it -> getObjectSchemas(it, allDefinitions))
+						.flatMap(Collection::stream)
+						.collect(Collectors.toList());
+			}
+		}
+		else if (schema.get$ref() != null)
+		{
+			return Lists.newArrayList(allDefinitions.get(ModelUtils.getSimpleRef(schema.get$ref())));
+		}
+		return Lists.newArrayList();
+	}
+
+	public class TypeAdapter
+	{
+
+		public String classname;
+		public String discriminator;
+		public boolean isArray;
+		public List<PostProcessHelper.TypeAdapterItem> items = new ArrayList<>();
+	}
+
+	public class TypeAdapterItem
+	{
+		public String discriminatorValue;
+		public String classname;
 	}
 }
