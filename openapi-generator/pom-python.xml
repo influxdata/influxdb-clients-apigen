@@ -9,7 +9,6 @@
     <properties>
         <library>urllib3</library>
         <swaggerLocation>${project.basedir}/../oss.yml</swaggerLocation>
-        <clientVersion>1.11.0dev</clientVersion>
 		<outputLocation>${project.basedir}/../build/influxdb-client-python</outputLocation>
 	</properties>
     <build>
@@ -27,7 +26,6 @@
                         <packageName>influxdb_client</packageName>
                         <sourceFolder>/</sourceFolder>
                         <validatable>false</validatable>
-                        <packageVersion>${clientVersion}</packageVersion>
                     </configOptions>
                     <generateModelDocumentation>false</generateModelDocumentation>
                     <generateApiDocumentation>false</generateApiDocumentation>
