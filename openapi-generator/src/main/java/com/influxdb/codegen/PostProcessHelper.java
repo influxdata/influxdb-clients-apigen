@@ -488,6 +488,17 @@ class PostProcessHelper
 				model.getReadWriteVars().clear();
 				model.hasOnlyReadOnly = true;
 			}
+
+			//
+			// Fixed Parent Vars
+			//
+			if (model.getParentModel() != null && model.getParentModel().getReadWriteVars() != null)
+			{
+				List<CodegenProperty> parentReadWriteVars = model.getParentModel().getReadWriteVars();
+				if (model.getParentVars().size() != parentReadWriteVars.size()) {
+					model.setParentVars(parentReadWriteVars);
+				}
+			}
 		}
 
 	}
