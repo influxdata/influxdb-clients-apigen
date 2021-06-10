@@ -2,10 +2,14 @@ version: 2.1
 
 commands:
   influxdb-onboarding:
+    parameters:
+      script-name:
+        type: string
+        default: "influxdb-onboarding"
     steps:
       - run:
           name: "Post onBoarding request to InfluxDB 2"
-          command: ./scripts/influxdb-onboarding.sh
+          command: ./scripts/<< parameters.script-name >>.sh
   build-generator:
     steps:
       - run: mvn -f openapi-generator/pom.xml clean install -DskipTests
@@ -69,7 +73,8 @@ jobs:
           INFLUXD_HTTP_BIND_ADDRESS: :8086
     steps:
       - checkout
-      - influxdb-onboarding
+      - influxdb-onboarding:
+          script-name: "influxdb-onboarding-v1v2"
       - attach_workspace:
           at: ./build
       - restore_cache:
