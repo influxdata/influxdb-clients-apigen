@@ -157,15 +157,6 @@ class PostProcessHelper
 		}
 
 		//
-		// Specify possible types for TelegrafPlugin
-		//
-		{
-			Schema telegrafPlugin = openAPI.getComponents().getSchemas().get("TelegrafPlugin");
-			StringSchema type = (StringSchema) telegrafPlugin.getProperties().get("type");
-			type._enum(Arrays.asList("inputs", "outputs", "aggregators", "processors"));
-		}
-
-		//
 		// Correctly generate inline Objects = AuthorizationLinks
 		//
 		if (generator.compileTimeInheritance())
@@ -466,6 +457,8 @@ class PostProcessHelper
 				setReadWriteWars(discriminatorModelBase, parentVars);
 
 				discriminatorModelBase = schema;
+				discriminatorModelBase.hasRequired = true;
+				discriminatorModelBase.hasOnlyReadOnly = false;
 			}
 
 			if (discriminatorModelBase != discriminatorModel)
@@ -580,6 +573,11 @@ class PostProcessHelper
 		// remove discriminator property from inherited Discriminator
 		if (discriminatorModel != base)
 		{
+			if (generator.compileTimeInheritance() && base.getDiscriminator() == null)
+			{
+				return;
+			}
+
 			discriminatorModel
 					.getRequiredVars()
 					.removeIf(codegenProperty -> codegenProperty.getBaseName().equals(discriminatorPropertyName));
