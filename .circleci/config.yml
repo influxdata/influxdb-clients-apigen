@@ -16,11 +16,13 @@ commands:
     parameters:
       client:
         type: string
+      branch:
+        type: string
     steps:
       - run:
           command: |
             mkdir -p ./build
-            git clone --single-branch --branch master https://github.com/influxdata/<< parameters.client >> ./build/<< parameters.client >>
+            git clone --single-branch --branch << parameters.branch >> https://github.com/influxdata/<< parameters.client >> ./build/<< parameters.client >>
 
 jobs:
   generate-client:
@@ -29,6 +31,9 @@ jobs:
     parameters:
       client:
         type: string
+      branch:
+        type: string
+        default: "master"
     steps:
       - checkout
       - restore_cache:
@@ -40,6 +45,7 @@ jobs:
       - download-oss-swagger
       - clone-client:
           client: influxdb-client-<< parameters.client >>
+          branch: << parameters.branch >>
       - run:
           name: "Generate << parameters.client >> client"
           command: |
@@ -85,6 +91,35 @@ jobs:
           paths:
             - ".venv"
             - "~/.cache/pip"
+  check-generated-csharp:
+    docker:
+      - image: "mcr.microsoft.com/dotnet/core/sdk:3.1"
+        environment:
+          NET_TARGET_VERSION: netstandard2.1
+      - image: "influxdb:latest"
+        environment:
+          INFLUXD_HTTP_BIND_ADDRESS: :9999
+      - image: "influxdb:latest"
+        name: influxdb_v2_onboarding
+        environment:
+          INFLUXD_HTTP_BIND_ADDRESS: :9999
+      - image: influxdb:1.8-alpine
+        environment:
+          INFLUXDB_HTTP_FLUX_ENABLED: true
+    environment:
+      INFLUXDB_2_ONBOARDING_IP: influxdb_v2_onboarding
+      INFLUXDB_2_ONBOARDING_PORT: 9999
+    steps:
+      - checkout
+      - influxdb-onboarding
+      - attach_workspace:
+          at: ./build
+      - run:
+          name: "Check Generated Client"
+          command: |
+            cd ./build/influxdb-client-csharp
+            ./Scripts/ci-test.sh false
+            ./trx2junit/trx2junit ./**/TestResults/*.trx
 
 workflows:
   version: 2
@@ -96,9 +131,13 @@ workflows:
       - generate-client:
           name: generate-csharp
           client: csharp
+          branch: feat/api-from-openapi-repository
       - check-generated-python:
           requires:
             - generate-python
+      - check-generated-csharp:
+          requires:
+            - generate-csharp
 
   nightly:
     triggers:
@@ -115,6 +154,10 @@ workflows:
       - generate-client:
           name: generate-csharp
           client: csharp
+          branch: feat/api-from-openapi-repository
       - check-generated-python:
           requires:
             - generate-python
+      - check-generated-csharp:
+          requires:
+            - generate-csharp
