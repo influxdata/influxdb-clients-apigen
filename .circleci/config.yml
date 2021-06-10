@@ -91,7 +91,7 @@ jobs:
             mkdir test-reports || true
             pytest tests --junitxml=test-reports/junit.xml
       - store_test_results:
-          path: test-reports
+          path: ./build/influxdb-client-python/test-reports
       - save_cache:
           name: Saving Pip Cache
           key: *cache-key
@@ -127,7 +127,8 @@ jobs:
           command: |
             cd ./build/influxdb-client-csharp
             ./Scripts/ci-test.sh false
-            ./trx2junit/trx2junit ./**/TestResults/*.trx
+      - store_test_results:
+          path: ./build/influxdb-client-csharp/test-results
 
 workflows:
   version: 2
