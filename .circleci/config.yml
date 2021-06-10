@@ -149,7 +149,6 @@ workflows:
       - generate-client:
           name: generate-csharp
           client: csharp
-          branch: feat/api-from-openapi-repository
       - check-generated-python:
           requires:
             - generate-python
@@ -172,7 +171,6 @@ workflows:
       - generate-client:
           name: generate-csharp
           client: csharp
-          branch: feat/api-from-openapi-repository
       - check-generated-python:
           requires:
             - generate-python
