@@ -105,7 +105,7 @@ class PostProcessHelper
 		// Drop supports for Templates, Stack
 		//
 		{
-			dropSchemas("Stack(.*)|Template(.*)");
+			dropSchemas("Stack(.*)|Template(.*)|LatLon(.*)");
 			dropPaths("/stacks(.*)|/templates(.*)");
 		}
 
@@ -205,6 +205,15 @@ class PostProcessHelper
 			Schema telegrafPlugin = openAPI.getComponents().getSchemas().get("TelegrafPlugin");
 			StringSchema type = (StringSchema) telegrafPlugin.getProperties().get("type");
 			type._enum(Arrays.asList("inputs", "outputs", "aggregators", "processors"));
+		}
+
+		//
+		// Add missing permission resource type
+		//
+		{
+			Schema resource = openAPI.getComponents().getSchemas().get("Resource");
+			StringSchema type = (StringSchema) resource.getProperties().get("type");
+			type.getEnum().add("annotations");
 		}
 
 		//
@@ -410,6 +419,7 @@ class PostProcessHelper
 									adapters.put(adapterName, typeAdapter);
 
 									model.vendorExtensions.put("x-type-adapters", adapters);
+									model.imports.addAll(generator.getTypeAdapterImports());
 								}
 							}
 						});

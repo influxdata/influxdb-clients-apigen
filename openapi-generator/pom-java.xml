@@ -7,7 +7,8 @@
     <version>1.0-SNAPSHOT</version>
     <name>influxdb-client-java</name>
     <properties>
-        <swaggerLocation>${project.basedir}/../swagger.yml</swaggerLocation>
+		<swaggerLocation>${project.basedir}/../oss.yml</swaggerLocation>
+		<outputLocation>${project.basedir}/../build/influxdb-client-java/client/src/generated</outputLocation>
     </properties>
     <build>
         <plugins>
@@ -30,7 +31,7 @@
                     <generateApiTests>false</generateApiTests>
                     <generateSupportingFiles>true</generateSupportingFiles>
                     <verbose>false</verbose>
-                    <output>${project.basedir}/../build/influxdb-client-java/client/src/generated</output>
+                    <output>${outputLocation}</output>
                     <addCompileSourceRoot>false</addCompileSourceRoot>
                     <modelPackage>com.influxdb.client.domain</modelPackage>
                     <apiPackage>com.influxdb.client.service</apiPackage>

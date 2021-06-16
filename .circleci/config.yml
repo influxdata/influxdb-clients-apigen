@@ -149,6 +149,9 @@ workflows:
       - generate-client:
           name: generate-csharp
           client: csharp
+      - generate-client:
+          name: generate-java
+          client: java
       - check-generated-python:
           requires:
             - generate-python
@@ -171,6 +174,9 @@ workflows:
       - generate-client:
           name: generate-csharp
           client: csharp
+      - generate-client:
+          name: generate-java
+          client: java
       - check-generated-python:
           requires:
             - generate-python

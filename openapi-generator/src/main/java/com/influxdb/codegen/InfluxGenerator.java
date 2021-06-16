@@ -3,6 +3,8 @@ package com.influxdb.codegen;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import java.util.Collection;
+
 import org.openapitools.codegen.CodegenProperty;
 
 /**
@@ -21,4 +23,7 @@ public interface InfluxGenerator
 	void updateCodegenPropertyEnum(CodegenProperty codegenProperty);
 
 	boolean compileTimeInheritance();
+
+	@Nonnull
+	Collection<String> getTypeAdapterImports();
 }

@@ -21,696 +21,386 @@
  */
 package com.influxdb.codegen;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
-import com.google.common.collect.Lists;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.Content;
-import io.swagger.v3.oas.models.media.Discriminator;
+import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.MediaType;
-import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.openapitools.codegen.CodegenConfig;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
-import org.openapitools.codegen.CodegenParameter;
-import org.openapitools.codegen.CodegenProperty;
-import org.openapitools.codegen.InlineModelResolver;
 import org.openapitools.codegen.languages.JavaClientCodegen;
 import org.openapitools.codegen.utils.ModelUtils;
 
-public class InfluxJavaGenerator extends JavaClientCodegen implements CodegenConfig {
+public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGenerator
+{
+	private PostProcessHelper postProcessHelper;
 
-    /**
-     * Configures a friendly name for the generator.  This will be used by the generator
-     * to select the library with the -g flag.
-     *
-     * @return the friendly name for the generator
-     */
-    public String getName() {
-        return "influx-java";
-    }
+	public InfluxJavaGenerator()
+	{
 
-    /**
-     * Returns human-friendly help for the generator.  Provide the consumer with help
-     * tips, parameters here
-     *
-     * @return A string value for the help message
-     */
-    public String getHelp() {
-        return "Generates a influx-java client library.";
-    }
+		super();
 
-    private OpenAPI openAPI;
+		importMapping.put("JSON", "com.influxdb.client.JSON");
+		importMapping.put("JsonDeserializer", "com.google.gson.JsonDeserializer");
+		importMapping.put("JsonDeserializationContext", "com.google.gson.JsonDeserializationContext");
+		importMapping.put("JsonSerializationContext", "com.google.gson.JsonSerializationContext");
+		importMapping.put("JsonSerializer", "com.google.gson.JsonSerializer");
+		importMapping.put("JsonParseException", "com.google.gson.JsonParseException");
+		importMapping.put("ArrayList", "java.util.ArrayList");
+		importMapping.put("List", "java.util.List");
+		importMapping.put("JsonObject", "com.google.gson.JsonObject");
+		importMapping.put("JsonArray", "com.google.gson.JsonArray");
+		importMapping.put("JsonElement", "com.google.gson.JsonElement");
+		importMapping.put("HashMap", "java.util.HashMap");
+		importMapping.put("Map", "java.util.Map");
+		importMapping.put("ReflectType", "java.lang.reflect.Type");
 
-    public InfluxJavaGenerator() {
+		//
+		// File is mapped to schema not to java.io.File
+		//
+		importMapping.remove("File");
 
-        super();
+		setUseNullForUnknownEnumValue(true);
+	}
 
-        importMapping.put("JSON", "com.influxdb.client.JSON");
-        importMapping.put("JsonDeserializer", "com.google.gson.JsonDeserializer");
-        importMapping.put("JsonDeserializationContext", "com.google.gson.JsonDeserializationContext");
-        importMapping.put("JsonSerializationContext", "com.google.gson.JsonSerializationContext");
-        importMapping.put("JsonSerializer", "com.google.gson.JsonSerializer");
-        importMapping.put("JsonParseException", "com.google.gson.JsonParseException");
-        importMapping.put("ArrayList", "java.util.ArrayList");
-        importMapping.put("List", "java.util.List");
-        importMapping.put("JsonObject", "com.google.gson.JsonObject");
-        importMapping.put("JsonArray", "com.google.gson.JsonArray");
-        importMapping.put("JsonElement", "com.google.gson.JsonElement");
-        importMapping.put("HashMap", "java.util.HashMap");
-        importMapping.put("Map", "java.util.Map");
-        importMapping.put("ReflectType", "java.lang.reflect.Type");
+	/**
+	 * Configures a friendly name for the generator.  This will be used by the generator to select the library with the
+	 * -g flag.
+	 *
+	 * @return the friendly name for the generator
+	 */
+	public String getName()
+	{
+		return "influx-java";
+	}
 
-        //
-        // File is mapped to schema not to java.io.File
-        //
-        importMapping.remove("File");
+	/**
+	 * Returns human-friendly help for the generator.  Provide the consumer with help tips, parameters here
+	 *
+	 * @return A string value for the help message
+	 */
+	public String getHelp()
+	{
+		return "Generates a influx-java client library.";
+	}
 
-        setUseNullForUnknownEnumValue(true);
-    }
+	@Override
+	public void setGlobalOpenAPI(final OpenAPI openAPI)
+	{
 
-    @Override
-    public void setGlobalOpenAPI(final OpenAPI openAPI) {
+		super.setGlobalOpenAPI(openAPI);
 
-        super.setGlobalOpenAPI(openAPI);
+		postProcessHelper = new PostProcessHelper(this);
+		postProcessHelper.postProcessOpenAPI();
 
-        InlineModelResolver inlineModelResolver = new InlineModelResolver();
-        inlineModelResolver.flatten(openAPI);
+		//
+		// Set String as body for Writes
+		//
+		{
+			openAPI.getPaths()
+					.get("/write")
+					.getPost()
+					.getRequestBody()
+					.getContent()
+					.get("text/plain")
+					.setSchema(new StringSchema());
+		}
 
-        String[] schemaNames = openAPI.getComponents().getSchemas().keySet().toArray(new String[0]);
-        for (String schemaName : schemaNames) {
-            Schema schema = openAPI.getComponents().getSchemas().get(schemaName);
-            if (schema instanceof ComposedSchema) {
+		//
+		// Use first ResponseObject for operation with multiple types of Response
+		//
+		openAPI.getPaths().values()
+				.forEach(pathItem -> pathItem
+						.readOperations()
+						.forEach(operation -> operation.getResponses().values().forEach((apiResponse) -> {
+							Content content = apiResponse.getContent();
+							if (content != null)
+							{
+								MediaType mediaType = content.get("application/json");
+								if (mediaType != null)
+								{
+									Schema contentSchema = mediaType.getSchema();
+									if (contentSchema instanceof ComposedSchema)
+									{
+										ComposedSchema schema = (ComposedSchema) contentSchema;
+										mediaType.setSchema(schema.getOneOf().get(0));
+									}
+								}
+							}
+						})));
 
+		//
+		// Use Integer instead Long for RetentionRule everySeconds
+		//
+		{
+			Arrays.asList("PatchRetentionRule", "RetentionRule")
+					.forEach(schema -> {
+						IntegerSchema everySeconds = (IntegerSchema) openAPI.getComponents().getSchemas().get(schema)
+								.getProperties()
+								.get("everySeconds");
+						everySeconds.setFormat(null);
+					});
+		}
+	}
 
-                List<Schema> allOf = ((ComposedSchema) schema).getAllOf();
-                if (allOf != null) {
+	@Override
+	public Map<String, Object> postProcessAllModels(final Map<String, Object> models)
+	{
 
-                    allOf.forEach(child -> {
+		Map<String, Object> allModels = super.postProcessAllModels(models);
+		postProcessHelper.postProcessModels(allModels);
 
-                        if (child instanceof ObjectSchema) {
+		return allModels;
+	}
 
-                            inlineModelResolver.flattenProperties(child.getProperties(), schemaName);
-                        }
-                    });
-                }
-            }
-        }
-    }
+	@Override
+	public void processOpts()
+	{
 
-    @Override
-    public Map<String, Object> postProcessAllModels(final Map<String, Object> models) {
+		super.processOpts();
 
-        //
-        // Remove type selectors
-        //
-        Map<String, Object> allModels = super.postProcessAllModels(models);
-        additionalProperties.remove("parent");
+		//
+		// We want to use only the JSON.java
+		//
+		supportingFiles = supportingFiles.stream()
+				.filter(supportingFile -> supportingFile.destinationFilename.equals("JSON.java"))
+				.collect(Collectors.toList());
+	}
 
-        for (Map.Entry<String, Object> entry : allModels.entrySet()) {
+	@Override
+	public Map<String, Object> postProcessOperationsWithModels(final Map<String, Object> objs,
+															   final List<Object> allModels)
+	{
+		Map<String, Object> operationsWithModels = super.postProcessOperationsWithModels(objs, allModels);
 
-            String modelName = entry.getKey();
-            Object modelConfig = entry.getValue();
-
-            CodegenModel pluginModel = getModel((HashMap) modelConfig);
-
-            //
-            // The "interfaces" extends base object
-            //
-            if (!pluginModel.hasVars && pluginModel.interfaces != null && !modelName.startsWith("Telegraf")) {
-
-                for (String interfaceModelName : pluginModel.interfaces) {
-
-                    CodegenModel interfaceModel = getModel((HashMap) models.get(interfaceModelName));
-                    if (!interfaceModel.name.contains("NotificationRule") && !pluginModel.classname.endsWith("NotificationEndpointDiscriminator")) {
-
-                        interfaceModel.setParent(pluginModel.classname);
-                    }
-                }
-
-                pluginModel.interfaces.clear();
-            }
-
-            //
-            //
-            //
-            if (modelName.equals("PropertyKey")) {
-
-                pluginModel.setParent("Expression");
-            }
-
-            if (modelName.equals("DeadmanCheck") || modelName.equals("ThresholdCheck")) {
-                pluginModel.setParent("Check");
-                pluginModel.setParentSchema("Check");
-            }
-
-            if (modelName.equals("SlackNotificationEndpoint") || modelName.equals("PagerDutyNotificationEndpoint")
-                    || modelName.equals("HTTPNotificationEndpoint")) {
-                pluginModel.setParent("NotificationEndpoint");
-                pluginModel.setParentSchema("NotificationEndpoint");
-            }
-
-            if (modelName.equals("NotificationEndpointDiscriminator")) {
-                pluginModel.setParent("PostNotificationEndpoint");
-                pluginModel.setParentSchema("PostNotificationEndpoint");
-            }
-
-            if (modelName.equals("NotificationRuleBase")) {
-                pluginModel.setParent("PostNotificationRule");
-                pluginModel.setParentSchema("PostNotificationRule");
-            }
-        }
-
-        additionalProperties.put("x-polymorphic-request-bodies", Arrays
-                .asList("PostNotificationEndpoint", "PostNotificationRule", "PostCheck"));
-
-        return allModels;
-    }
-
-    @Override
-    public void processOpts() {
-
-        super.processOpts();
+		List<CodegenOperation> operations = (List<CodegenOperation>) ((HashMap) operationsWithModels
+				.get("operations"))
+				.get("operation");
 
         //
-        // We want to use only the JSON.java
+        // For operations with more response type (Accept) generate additional implementation
         //
-        supportingFiles = supportingFiles.stream()
-                .filter(supportingFile -> supportingFile.destinationFilename.equals("JSON.java"))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public void postProcessModelProperty(CodegenModel model, CodegenProperty property) {
-
-        super.postProcessModelProperty(model, property);
-
-        //
-        // If its a constant then set default value
-        //
-        if (property.isEnum && property.get_enum() != null && property.get_enum().size() == 1) {
-            property.isReadOnly = true;
-            property.defaultValue = property.enumName + "." + getEnumDefaultValue(model, property.name);
-        }
-    }
-
-    @Override
-    public Map<String, Object> postProcessOperationsWithModels(final Map<String, Object> objs,
-                                                               final List<Object> allModels) {
-
-        Map<String, Object> operationsWithModels = super.postProcessOperationsWithModels(objs, allModels);
-
-        List<CodegenOperation> operations = (List<CodegenOperation>) ((HashMap) operationsWithModels.get("operations"))
-                .get("operation");
-
-        //
-        // For operations with more response type generate additional implementation
-        //
-        List<CodegenOperation> operationToSplit = operations.stream()
-                .filter(operation -> operation.produces.size() > 1)
-                .collect(Collectors.toList());
-
-        operationToSplit.forEach(operation -> {
-
-            List<String> returnTypes = operation.produces.stream()
-                    .filter(produce -> operation.produces.indexOf(produce) != 0)
-                    .map(produce -> {
-
-                        PathItem path = openAPI.getPaths().get(StringUtils.substringAfter(operation.path, "/v2"));
-
-                        Operation apiOperation;
-                        switch (operation.httpMethod.toLowerCase()) {
-
-                            case "get":
-                                apiOperation = path.getGet();
-                                break;
-
-                            case "post":
-                                apiOperation = path.getPost();
-                                break;
-
-                            default:
-                                throw new IllegalStateException();
-                        }
-
-                        Content content = apiOperation.getResponses().get("200").getContent();
-                        MediaType mediaType = content.get(produce.get("mediaType"));
-                        if (mediaType == null) {
-                            return "";
-                        }
-                        Schema responseSchema = mediaType.getSchema();
-
-                        if (responseSchema.get$ref() != null) {
-
-                            String modelName = ModelUtils.getSimpleRef(responseSchema.get$ref());
-
-                            CodegenModel model = (CodegenModel) ((HashMap) allModels.stream()
-                                    .filter(it -> modelName.equals(((CodegenModel) ((HashMap) it).get("model")).name))
-                                    .findFirst()
-                                    .get()).get("model");
-
-                            return model.classname;
-                        } else {
-                            return camelize(responseSchema.getType());
-                        }
-
-                    })
-                    .filter(it -> !it.isEmpty())
-                    .distinct()
-                    .collect(Collectors.toList());
-
-            if (!returnTypes.isEmpty()) {
-                returnTypes.add("ResponseBody");
-            }
-
-            returnTypes.forEach(returnType -> {
-                CodegenOperation codegenOperation = new CodegenOperation();
-                codegenOperation.baseName = operation.baseName + returnType;
-                codegenOperation.summary = operation.summary;
-                codegenOperation.notes = operation.notes;
-                codegenOperation.allParams = operation.allParams;
-                codegenOperation.httpMethod = operation.httpMethod;
-                codegenOperation.path = operation.path;
-                codegenOperation.returnType = returnType;
-                codegenOperation.operationId = operation.operationId + returnType;
-
-                operations.add(operations.indexOf(operation) + 1, codegenOperation);
-            });
-        });
-
-        //
-        // For basic auth add authorization header
-        //
-        operations.stream()
-                .filter(operation -> operation.hasAuthMethods)
-                .forEach(operation -> {
-
-                    operation.authMethods.stream()
-                            .filter(security -> security.isBasic)
-                            .forEach(security -> {
-
-                                CodegenParameter authorization = new CodegenParameter();
-                                authorization.isHeaderParam = true;
-                                authorization.isPrimitiveType = true;
-                                authorization.isString = true;
-                                authorization.baseName = "Authorization";
-                                authorization.paramName = "authorization";
-                                authorization.dataType = "String";
-                                authorization.description = "An auth credential for the Basic scheme";
-
-                                operation.allParams.get(operation.allParams.size() - 1).hasMore = true;
-                                operation.allParams.add(authorization);
-                            });
-                });
-
-        return operationsWithModels;
-
-    }
-
-    @Override
-    public CodegenOperation fromOperation(String path, String httpMethod, Operation operation, Map<String, Schema> definitions, OpenAPI openAPI) {
-
-        CodegenOperation op = super.fromOperation(path, httpMethod, operation, definitions, openAPI);
-
-        //
-        // Set base path
-        //
-        String url;
-        if (operation.getServers() != null) {
-            url = operation.getServers().get(0).getUrl();
-        } else if (openAPI.getPaths().get(path).getServers() != null) {
-            url = openAPI.getPaths().get(path).getServers().get(0).getUrl();
-        } else {
-            url = openAPI.getServers().get(0).getUrl();
-        }
-
-        if (!url.equals("/")) {
-            op.path = url + op.path;
-        }
-
-        return op;
-    }
-
-
-    @Override
-    public CodegenModel fromModel(final String name, final Schema model, final Map<String, Schema> allDefinitions) {
-
-        CodegenModel codegenModel = super.fromModel(name, model, allDefinitions);
-
-        Map properties = model.getProperties();
-        if (properties == null && model instanceof ComposedSchema) {
-            if (((ComposedSchema) model).getAllOf() != null) {
-                properties = ((ComposedSchema) model).getAllOf().stream()
-                        .filter(allOf -> allOf instanceof ObjectSchema)
-                        .map((Function<Schema, Map>) Schema::getProperties)
-                        .findFirst()
-                        .orElse(null);
-            }
-        }
-        if (properties != null) {
-
-            properties
-                    .forEach((BiConsumer<String, Schema>) (property, propertySchema) -> {
-
-                        Schema schema = propertySchema;
-
-                        //
-                        // Reference to List of Object
-                        //
-                        if (schema instanceof ArraySchema) {
-                            String ref = ((ArraySchema) schema).getItems().get$ref();
-                            if (ref != null) {
-                                String refSchemaName = ModelUtils.getSimpleRef(ref);
-                                Schema refSchema = allDefinitions.get(refSchemaName);
-
-                                if (refSchema instanceof ComposedSchema) {
-                                    if (((ComposedSchema) refSchema).getOneOf() != null) {
-                                        schema = refSchema;
-                                    }
-                                }
-                            }
-                        }
-
-                        //
-                        // Reference to Object
-                        //
-                        else if (schema.get$ref() != null) {
-                            String refSchemaName = ModelUtils.getSimpleRef(schema.get$ref());
-                            Schema refSchema = allDefinitions.get(refSchemaName);
-
-                            if (refSchema instanceof ComposedSchema) {
-                                if (((ComposedSchema) refSchema).getOneOf() != null) {
-                                    schema = refSchema;
-                                }
-                            }
-                        }
-
-                        final Discriminator apiDiscriminator = schema.getDiscriminator();
-
-                        CodegenProperty codegenProperty = getCodegenProperty(codegenModel, property);
-                        if (codegenProperty != null) {
-                            String adapterName = name + codegenProperty.nameInCamelCase + "Adapter";
-                            TypeAdapter typeAdapter = new TypeAdapter();
-                            typeAdapter.classname = adapterName;
-
-                            Map<String, TypeAdapter> adapters = (HashMap<String, TypeAdapter>) codegenModel.vendorExtensions
-                                    .getOrDefault("x-type-adapters", new HashMap<String, TypeAdapter>());
-
-                            if (apiDiscriminator != null) {
-
-                                apiDiscriminator.getMapping().forEach((mappingKey, refSchemaName) ->
-                                {
-                                    typeAdapter.isArray = propertySchema instanceof ArraySchema;
-                                    typeAdapter.discriminator = Stream.of(apiDiscriminator.getPropertyName())
-                                            .map(v -> "\"" + v + "\"")
-                                            .collect(Collectors.joining(", "));
-                                    TypeAdapterItem typeAdapterItem = new TypeAdapterItem();
-                                    typeAdapterItem.discriminatorValue = Stream.of(mappingKey).map(v -> "\"" + v + "\"").collect(Collectors.joining(", "));
-                                    typeAdapterItem.classname = ModelUtils.getSimpleRef(refSchemaName);
-                                    typeAdapter.items.add(typeAdapterItem);
-                                });
-                            }
-
-
-                            if (apiDiscriminator == null && schema instanceof ComposedSchema) {
-
-
-                                for (Schema oneOf : getOneOf(schema, allDefinitions)) {
-
-                                    String refSchemaName;
-                                    Schema refSchema;
-
-                                    if (oneOf.get$ref() == null) {
-                                        refSchema = oneOf;
-                                        refSchemaName = oneOf.getName();
-                                    } else {
-                                        refSchemaName = ModelUtils.getSimpleRef(oneOf.get$ref());
-                                        refSchema = allDefinitions.get(refSchemaName);
-                                        if (refSchema instanceof ComposedSchema) {
-                                            List<Schema> schemaList = ((ComposedSchema) refSchema).getAllOf().stream()
-                                                    .map(it -> getObjectSchemas(it, allDefinitions))
-                                                    .flatMap(Collection::stream)
-                                                    .filter(it -> it instanceof ObjectSchema).collect(Collectors.toList());
-                                            refSchema = schemaList
-                                                    .stream()
-                                                    .filter(it -> {
-                                                        for (Schema ps : (Collection<Schema>) it.getProperties().values()) {
-                                                            if (ps.getEnum() != null && ps.getEnum().size() == 1) {
-                                                                return true;
-                                                            }
-                                                        }
-                                                        return false;
-                                                    })
-                                                    .findFirst()
-                                                    .orElse(schemaList.get(0));
-                                        }
-                                    }
-
-                                    String[] keys = getDiscriminatorKeys(schema, refSchema);
-
-                                    String[] discriminator = new String[]{};
-                                    String[] discriminatorValue = new String[]{};
-
-                                    for (String key : keys) {
-                                        Schema keyScheme = (Schema) refSchema.getProperties().get(key);
-                                        if (keyScheme.get$ref() != null) {
-                                            keyScheme = allDefinitions.get(ModelUtils.getSimpleRef(keyScheme.get$ref()));
-                                        }
-
-                                        if (!(keyScheme instanceof StringSchema)) {
-                                            continue;
-                                        } else {
-
-                                            if (((StringSchema) keyScheme).getEnum() != null) {
-                                                discriminatorValue = ArrayUtils.add(discriminatorValue, ((StringSchema) keyScheme).getEnum().get(0));
-                                            } else {
-                                                discriminatorValue = ArrayUtils.add(discriminatorValue, refSchemaName);
-                                            }
-                                        }
-
-                                        discriminator = ArrayUtils.add(discriminator, key);
-                                    }
-
-                                    typeAdapter.isArray = propertySchema instanceof ArraySchema;
-                                    typeAdapter.discriminator = Stream.of(discriminator).map(v -> "\"" + v + "\"").collect(Collectors.joining(", "));
-                                    TypeAdapterItem typeAdapterItem = new TypeAdapterItem();
-                                    typeAdapterItem.discriminatorValue = Stream.of(discriminatorValue).map(v -> "\"" + v + "\"").collect(Collectors.joining(", "));
-                                    typeAdapterItem.classname = refSchemaName;
-                                    typeAdapter.items.add(typeAdapterItem);
-                                }
-                            }
-
-                            if (!typeAdapter.items.isEmpty()) {
-
-                                codegenProperty.vendorExtensions.put("x-has-type-adapter", Boolean.TRUE);
-                                codegenProperty.vendorExtensions.put("x-type-adapter", adapterName);
-
-                                adapters.put(adapterName, typeAdapter);
-
-                                codegenModel.vendorExtensions.put("x-type-adapters", adapters);
-                                codegenModel.imports.add("JsonDeserializer");
-                                codegenModel.imports.add("JsonDeserializationContext");
-                                codegenModel.imports.add("JsonSerializer");
-                                codegenModel.imports.add("JsonSerializationContext");
-                                codegenModel.imports.add("ArrayList");
-                                codegenModel.imports.add("List");
-                                codegenModel.imports.add("JsonElement");
-                                codegenModel.imports.add("JsonObject");
-                                codegenModel.imports.add("JsonArray");
-                                codegenModel.imports.add("JsonParseException");
-                                codegenModel.imports.add("ReflectType");
-                            }
-                        }
-                    });
-        }
-
-        // use generic precedents
-        if (codegenModel.getParent() != null && codegenModel.getParent().endsWith("Base")) {
-            codegenModel.setParent(StringUtils.substringBefore(codegenModel.getParent(), "Base"));
-            codegenModel.setParentSchema(StringUtils.substringBefore(codegenModel.getParent(), "Base"));
-        }
-
-        if (allDefinitions.containsKey(name + "Base")) {
-            codegenModel.setParent(name + "Base");
-            codegenModel.setParentSchema(name + "Base");
-        }
-
-        if (codegenModel.name.endsWith("NotificationRuleBase") && !codegenModel.name.equals("NotificationRuleBase")) {
-            codegenModel.setParent("NotificationRule");
-            codegenModel.setParentSchema("NotificationRule");
-        }
-
-        if (codegenModel.name.equals("CheckBase")) {
-            codegenModel.setParent("CheckDiscriminator");
-            codegenModel.setParentSchema("CheckDiscriminator");
-        }
-
-        if (codegenModel.name.equals("NotificationEndpointBase")) {
-            codegenModel.setParent("NotificationEndpointDiscriminator");
-            codegenModel.setParentSchema("NotificationEndpointDiscriminator");
-        }
-
-        if (codegenModel.name.equals("PostCheck") || codegenModel.name.equals("PostNotificationEndpoint")) {
-            codegenModel.setParent(null);
-            codegenModel.setParentSchema(null);
-        }
-
-        return codegenModel;
-    }
-
-    @Override
-    public String toApiName(String name) {
-
-        if (name.length() == 0) {
-            return super.toApiName(name);
-        }
-
-        //
-        // Rename "Api" to "Service"
-        //
-        return camelize(name) + "Service";
-    }
-
-    @Override
-    public String toModelName(final String name) {
-        String modelName = super.toModelName(name);
-        if ("PostBucketRequestRetentionRules".equals(modelName)) {
-            return "BucketRetentionRules";
-        }
-        return modelName;
-    }
-
-    @Override
-    public void preprocessOpenAPI(final OpenAPI openAPI) {
-        super.preprocessOpenAPI(openAPI);
-
-        this.openAPI = openAPI;
-    }
-
-    @Nonnull
-    private String getEnumValue(final CodegenModel model, final String propertyName) {
-
-        CodegenProperty codegenProperty = getCodegenProperty(model, propertyName);
-        if (codegenProperty == null) {
-            throw new IllegalStateException("Model: " + model + " doesn't have a property: " + propertyName);
-        }
-
-        return codegenProperty.get_enum().get(0);
-    }
-
-    @Nonnull
-    private String getEnumDefaultValue(final CodegenModel model, final String propertyName) {
-
-        String enumValue = getEnumValue(model, propertyName);
-
-        return enumValue.toUpperCase().replace("-", "_");
-    }
-
-    @Nullable
-    private CodegenProperty getCodegenProperty(final CodegenModel model, final String propertyName) {
-        return model.vars.stream()
-                .filter(property -> property.name.equals(propertyName))
-                .findFirst().orElse(null);
-    }
-
-    @Nonnull
-    private CodegenModel getModel(@Nonnull final HashMap modelConfig) {
-
-        HashMap models = (HashMap) ((ArrayList) modelConfig.get("models")).get(0);
-
-        return (CodegenModel) models.get("model");
-    }
-
-    private List<Schema> getObjectSchemas(final Schema schema, final Map<String, Schema> allDefinitions) {
-        if (schema instanceof ObjectSchema) {
-            return Lists.newArrayList(schema);
-        } else if (schema instanceof ComposedSchema) {
-            List<Schema> allOf = ((ComposedSchema) schema).getAllOf();
-            if (allOf != null) {
-                return allOf.stream().map(it -> getObjectSchemas(it, allDefinitions))
-                        .flatMap(Collection::stream)
-                        .collect(Collectors.toList());
-            }
-        } else if (schema.get$ref() != null) {
-            return Lists.newArrayList(allDefinitions.get(ModelUtils.getSimpleRef(schema.get$ref())));
-        }
-        return Lists.newArrayList();
-    }
-
-    private List<Schema> getOneOf(final Schema schema, final Map<String, Schema> allDefinitions) {
-
-        List<Schema> schemas = new ArrayList<>();
-
-        if (schema instanceof ComposedSchema) {
-
-            ComposedSchema composedSchema = (ComposedSchema) schema;
-            for (Schema oneOfSchema : composedSchema.getOneOf()) {
-
-                if (oneOfSchema.get$ref() != null) {
-
-                    Schema refSchema = allDefinitions.get(ModelUtils.getSimpleRef(oneOfSchema.get$ref()));
-                    if (refSchema instanceof ComposedSchema && ((ComposedSchema) refSchema).getOneOf() != null) {
-                        schemas.addAll(((ComposedSchema) refSchema).getOneOf());
-                    } else {
-                        schemas.add(oneOfSchema);
-                    }
-                }
-            }
-        }
-
-        return schemas;
-    }
-
-    private String[] getDiscriminatorKeys(final Schema schema, final Schema refSchema) {
-        List<String> keys = new ArrayList<>();
-
-        if (refSchema.getProperties() == null) {
-            keys.add(schema.getDiscriminator().getPropertyName());
-        } else {
-            refSchema.getProperties().forEach((BiConsumer<String, Schema>) (property, propertySchema) -> {
-
-                if (keys.isEmpty()) {
-                    keys.add(property);
-
-                } else if (propertySchema.getEnum() != null && propertySchema.getEnum().size() == 1) {
-                    keys.add(property);
-                }
-            });
-        }
-
-        return keys.toArray(new String[0]);
-    }
-
-    public class TypeAdapter {
-
-        public String classname;
-        public String discriminator;
-        public boolean isArray;
-        public List<TypeAdapterItem> items = new ArrayList<>();
-    }
-
-    public class TypeAdapterItem {
-
-        public String discriminatorValue;
-        public String classname;
-    }
+		List<CodegenOperation> operationToSplit = operations.stream()
+				.filter(operation -> operation.produces.size() > 1)
+				.collect(Collectors.toList());
+
+		operationToSplit.forEach(operation -> {
+
+			List<String> returnTypes = operation.produces.stream()
+					.filter(produce -> operation.produces.indexOf(produce) != 0)
+					.map(produce -> {
+
+						PathItem path = globalOpenAPI.getPaths().get(StringUtils.substringAfter(operation.path, "/v2"));
+
+						Operation apiOperation;
+						switch (operation.httpMethod.toLowerCase())
+						{
+							case "get":
+								apiOperation = path.getGet();
+								break;
+							case "post":
+								apiOperation = path.getPost();
+								break;
+							default:
+								throw new IllegalStateException();
+						}
+
+						Content content = apiOperation.getResponses().get("200").getContent();
+						MediaType mediaType = content.get(produce.get("mediaType"));
+						if (mediaType == null)
+						{
+							return "";
+						}
+						Schema responseSchema = mediaType.getSchema();
+
+						if (responseSchema.get$ref() != null)
+						{
+
+							String modelName = ModelUtils.getSimpleRef(responseSchema.get$ref());
+
+							CodegenModel model = (CodegenModel) ((HashMap) allModels.stream()
+									.filter(it -> modelName.equals(((CodegenModel) ((HashMap) it).get("model")).name))
+									.findFirst()
+									.get()).get("model");
+
+							return model.classname;
+						}
+						else
+						{
+							return org.openapitools.codegen.utils.StringUtils.camelize(responseSchema.getType());
+						}
+
+					})
+					.filter(it -> !it.isEmpty())
+					.distinct()
+					.collect(Collectors.toList());
+
+			if (!returnTypes.isEmpty())
+			{
+				returnTypes.add("ResponseBody");
+			}
+
+			returnTypes.forEach(returnType -> {
+				CodegenOperation codegenOperation = new CodegenOperation();
+				codegenOperation.baseName = operation.baseName + returnType;
+				codegenOperation.summary = operation.summary;
+				codegenOperation.notes = operation.notes;
+				codegenOperation.allParams = operation.allParams;
+				codegenOperation.httpMethod = operation.httpMethod;
+				codegenOperation.path = operation.path;
+				codegenOperation.returnType = returnType;
+				codegenOperation.operationId = operation.operationId + returnType;
+
+				operations.add(operations.indexOf(operation) + 1, codegenOperation);
+			});
+		});
+
+		return operationsWithModels;
+	}
+
+	@Override
+	public CodegenOperation fromOperation(String path, String httpMethod, Operation operation, Map<String, Schema> definitions, OpenAPI openAPI)
+	{
+
+		CodegenOperation op = super.fromOperation(path, httpMethod, operation, definitions, openAPI);
+		postProcessHelper.postProcessOperation(path, operation, op, definitions);
+
+		return op;
+	}
+
+
+	@Override
+	public CodegenModel fromModel(final String name, final Schema schema, final Map<String, Schema> allDefinitions)
+	{
+
+		CodegenModel model = super.fromModel(name, schema, allDefinitions);
+		postProcessHelper.postProcessModel(model, schema, allDefinitions);
+
+		return model;
+	}
+
+	@Override
+	public String toApiName(String name)
+	{
+
+		if (name.length() == 0)
+		{
+			return super.toApiName(name);
+		}
+
+		//
+		// Rename "Api" to "Service"
+		//
+		return org.openapitools.codegen.utils.StringUtils.camelize(name) + "Service";
+	}
+
+	@Override
+	public String toModelName(final String name)
+	{
+		String modelName = super.toModelName(name);
+
+		if ("RetentionRule".equals(modelName))
+		{
+			return "BucketRetentionRules";
+		}
+
+		if ("Resource".equals(modelName))
+		{
+			return "PermissionResource";
+		}
+
+		if ("UserResponse".equals(modelName))
+		{
+			return "User";
+		}
+
+		if ("User".equals(modelName))
+		{
+			return "PostUser";
+		}
+
+		if ("ResourceMembersLinks".equals(modelName))
+		{
+			return "UsersLinks";
+		}
+
+		if ("UserResponseLinks".equals(modelName))
+		{
+			return "UserLinks";
+		}
+
+		if ("DashboardWithViewPropertiesLinks".equals(modelName))
+		{
+			return "DashboardLinks";
+		}
+
+		if ("DashboardWithViewPropertiesMeta".equals(modelName))
+		{
+			return "DashboardMeta";
+		}
+
+		if ("PatchDashboardRequest1".equals(modelName))
+		{
+			return "PatchDashboardRequest";
+		}
+
+		return modelName;
+	}
+
+	@NotNull
+	@Override
+	public OpenAPI getOpenAPI()
+	{
+		return globalOpenAPI;
+	}
+
+	@Override
+	public String toEnumConstructorDefaultValue(final String value, final String datatype)
+	{
+		return toEnumDefaultValue(value.toUpperCase(), datatype);
+	}
+
+	@Nullable
+	@Override
+	public String optionalDatatypeKeyword()
+	{
+		return null;
+	}
+
+	@Override
+	public boolean compileTimeInheritance()
+	{
+		return true;
+	}
+
+	@NotNull
+	@Override
+	public Collection<String> getTypeAdapterImports()
+	{
+		return Arrays.asList("JsonDeserializer",
+				"JsonDeserializationContext",
+				"JsonSerializer",
+				"JsonSerializationContext",
+				"ArrayList",
+				"List",
+				"JsonElement",
+				"JsonObject",
+				"JsonArray",
+				"JsonParseException",
+				"ReflectType");
+	}
 }
