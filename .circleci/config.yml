@@ -2,10 +2,14 @@ version: 2.1
 
 commands:
   influxdb-onboarding:
+    parameters:
+      script-name:
+        type: string
+        default: "influxdb-onboarding"
     steps:
       - run:
           name: "Post onBoarding request to InfluxDB 2"
-          command: ./scripts/influxdb-onboarding.sh
+          command: ./scripts/<< parameters.script-name >>.sh
   build-generator:
     steps:
       - run: mvn -f openapi-generator/pom.xml clean install -DskipTests
@@ -16,16 +20,24 @@ commands:
     parameters:
       client:
         type: string
+      branch:
+        type: string
     steps:
       - run:
           command: |
             mkdir -p ./build
-            git clone --single-branch --branch master https://github.com/influxdata/<< parameters.client >> ./build/<< parameters.client >>
+            git clone --single-branch --branch << parameters.branch >> https://github.com/influxdata/<< parameters.client >> ./build/<< parameters.client >>
 
 jobs:
-  generate-python:
+  generate-client:
     docker:
       - image: "circleci/openjdk:8-stretch"
+    parameters:
+      client:
+        type: string
+      branch:
+        type: string
+        default: "master"
     steps:
       - checkout
       - restore_cache:
@@ -36,15 +48,16 @@ jobs:
       - build-generator
       - download-oss-swagger
       - clone-client:
-          client: influxdb-client-python
+          client: influxdb-client-<< parameters.client >>
+          branch: << parameters.branch >>
       - run:
-          name: "Generate Python client"
+          name: "Generate << parameters.client >> client"
           command: |
-            ./generate-python.sh
+            ./generate-<< parameters.client >>.sh
       - persist_to_workspace:
           root: build
           paths:
-            - ./influxdb-client-python
+            - ./influxdb-client-<< parameters.client >>
       - save_cache:
           name: Saving Maven Cache
           key: *cache-key
@@ -75,22 +88,73 @@ jobs:
             pip install -e . --user
             pip install -e .\[extra\] --user
             pip install -e .\[test\] --user
-            pytest tests
+            mkdir test-reports || true
+            pytest tests --junitxml=test-reports/junit.xml
+      - store_test_results:
+          path: ./build/influxdb-client-python/test-reports
       - save_cache:
           name: Saving Pip Cache
           key: *cache-key
           paths:
             - ".venv"
             - "~/.cache/pip"
+  check-generated-csharp:
+    docker:
+      - image: "mcr.microsoft.com/dotnet/core/sdk:3.1"
+        environment:
+          NET_TARGET_VERSION: netstandard2.1
+      - image: "influxdb:latest"
+        environment:
+          INFLUXD_HTTP_BIND_ADDRESS: :9999
+      - image: "influxdb:latest"
+        name: influxdb_v2_onboarding
+        environment:
+          INFLUXD_HTTP_BIND_ADDRESS: :9999
+      - image: influxdb:1.8-alpine
+        environment:
+          INFLUXDB_HTTP_FLUX_ENABLED: true
+    environment:
+      INFLUXDB_2_ONBOARDING_IP: influxdb_v2_onboarding
+      INFLUXDB_2_ONBOARDING_PORT: 9999
+    steps:
+      - checkout
+      - influxdb-onboarding:
+          script-name: "influxdb-onboarding-v1v2"
+      - attach_workspace:
+          at: ./build
+      - run:
+          name: "Check Generated Client"
+          command: |
+            cd ./build/influxdb-client-csharp
+            ./Scripts/ci-test.sh false
+            mkdir test-results
+            mkdir test-results/client-legacy
+            cp -r Client.Legacy.Test/TestResults/*.xml test-results/client-legacy || true
+            mkdir test-results/client-linq
+            cp -r Client.Linq.Test/TestResults/*.xml test-results/client-linq || true
+            mkdir test-results/client
+            cp -r Client.Test/TestResults/*.xml test-results/client || true
+            mkdir test-results/client-core
+            cp -r Client.Core.Test/TestResults/*.xml test-results/client-core || true
+      - store_test_results:
+          path: ./build/influxdb-client-csharp/test-results
 
 workflows:
   version: 2
   build:
     jobs:
-      - generate-python
+      - generate-client:
+          name: generate-python
+          client: python
+      - generate-client:
+          name: generate-csharp
+          client: csharp
       - check-generated-python:
           requires:
             - generate-python
+      - check-generated-csharp:
+          requires:
+            - generate-csharp
 
   nightly:
     triggers:
@@ -101,7 +165,15 @@ workflows:
               only:
                 - master
     jobs:
-      - generate-python
+      - generate-client:
+          name: generate-python
+          client: python
+      - generate-client:
+          name: generate-csharp
+          client: csharp
       - check-generated-python:
           requires:
             - generate-python
+      - check-generated-csharp:
+          requires:
+            - generate-csharp

@@ -52,6 +52,7 @@ pr-java:
 ### CSharp
 generate-csharp:
 	$(call git_checkout,influxdb-client-csharp)
+	@docker-compose run download-oss-swagger
 	@docker-compose run java ./generate-csharp.sh
 
 check-csharp:

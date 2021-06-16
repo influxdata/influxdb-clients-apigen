@@ -7,7 +7,8 @@
     <version>1.0-SNAPSHOT</version>
     <name>influxdb-client-csharp</name>
     <properties>
-        <swaggerLocation>${project.basedir}/../swagger.yml</swaggerLocation>
+		<swaggerLocation>${project.basedir}/../oss.yml</swaggerLocation>
+		<outputLocation>${project.basedir}/../build/influxdb-client-csharp/Client</outputLocation>
     </properties>
     <build>
         <plugins>
@@ -32,7 +33,7 @@
                     <generateSupportingFiles>true</generateSupportingFiles>
                     <generateModelTests>false</generateModelTests>
                     <verbose>false</verbose>
-                    <output>${project.basedir}/../build/influxdb-client-csharp/Client</output>
+                    <output>${outputLocation}</output>
                     <addCompileSourceRoot>false</addCompileSourceRoot>
                     <modelPackage>Domain</modelPackage>
                     <apiPackage>Service</apiPackage>
