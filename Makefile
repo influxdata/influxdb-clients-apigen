@@ -41,6 +41,7 @@ openapi-generator: git-checkout-all
 #### Java
 generate-java:
 	$(call git_checkout,influxdb-client-java)
+	@docker-compose run download-oss-swagger
 	@docker-compose run java ./generate-java.sh
 
 check-java:

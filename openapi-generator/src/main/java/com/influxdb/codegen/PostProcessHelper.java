@@ -105,7 +105,7 @@ class PostProcessHelper
 		// Drop supports for Templates, Stack
 		//
 		{
-			dropSchemas("Stack(.*)|Template(.*)");
+			dropSchemas("Stack(.*)|Template(.*)|LatLon(.*)");
 			dropPaths("/stacks(.*)|/templates(.*)");
 		}
 
@@ -205,6 +205,15 @@ class PostProcessHelper
 			Schema telegrafPlugin = openAPI.getComponents().getSchemas().get("TelegrafPlugin");
 			StringSchema type = (StringSchema) telegrafPlugin.getProperties().get("type");
 			type._enum(Arrays.asList("inputs", "outputs", "aggregators", "processors"));
+		}
+
+		//
+		// Add missing permission resource type
+		//
+		{
+			Schema resource = openAPI.getComponents().getSchemas().get("Resource");
+			StringSchema type = (StringSchema) resource.getProperties().get("type");
+			type.getEnum().add("annotations");
 		}
 
 		//
@@ -410,10 +419,22 @@ class PostProcessHelper
 									adapters.put(adapterName, typeAdapter);
 
 									model.vendorExtensions.put("x-type-adapters", adapters);
+									model.imports.addAll(generator.getTypeAdapterImports());
 								}
 							}
 						});
 			}
+		}
+	}
+
+	void postProcessModelProperty(final CodegenModel model, final CodegenProperty property) {
+
+		//
+		// If its a constant then set default value
+		//
+		if (property.isEnum && property.get_enum() != null && property.get_enum().size() == 1) {
+			property.isReadOnly = true;
+			property.defaultValue = generator.toEnumConstructorDefaultValue(property.get_enum().get(0), property.enumName);
 		}
 	}
 
@@ -456,6 +477,28 @@ class PostProcessHelper
 					var.setDescription(description.trim());
 				}
 			});
+		}
+
+		//
+		// Fix structure of AST
+		//
+		{
+			CodegenModel propertyKey = getModel((HashMap) allModels.get("PropertyKey"));
+			CodegenModel identifier = getModel((HashMap) allModels.get("Identifier"));
+			CodegenModel expression = getModel((HashMap) allModels.get("Expression"));
+			CodegenModel stringLiteral = getModel((HashMap) allModels.get("StringLiteral"));
+
+			identifier.setParentModel(propertyKey);
+			identifier.setParent(propertyKey.getName());
+			identifier.setParentSchema(propertyKey.getName());
+
+			propertyKey.setParentModel(expression);
+			propertyKey.setParent(expression.getName());
+			propertyKey.setParentSchema(expression.getName());
+
+			stringLiteral.setParentModel(propertyKey);
+			stringLiteral.setParent(propertyKey.getName());
+			stringLiteral.setParentSchema(propertyKey.getName());
 		}
 
 		fixInheritance("Check", Arrays.asList("Deadman", "Custom", "Threshold"), allModels);
