@@ -468,6 +468,28 @@ class PostProcessHelper
 			});
 		}
 
+		//
+		// Fix structure of AST
+		//
+		{
+			CodegenModel propertyKey = getModel((HashMap) allModels.get("PropertyKey"));
+			CodegenModel identifier = getModel((HashMap) allModels.get("Identifier"));
+			CodegenModel expression = getModel((HashMap) allModels.get("Expression"));
+			CodegenModel stringLiteral = getModel((HashMap) allModels.get("StringLiteral"));
+
+			identifier.setParentModel(propertyKey);
+			identifier.setParent(propertyKey.getName());
+			identifier.setParentSchema(propertyKey.getName());
+
+			propertyKey.setParentModel(expression);
+			propertyKey.setParent(expression.getName());
+			propertyKey.setParentSchema(expression.getName());
+
+			stringLiteral.setParentModel(propertyKey);
+			stringLiteral.setParent(propertyKey.getName());
+			stringLiteral.setParentSchema(propertyKey.getName());
+		}
+
 		fixInheritance("Check", Arrays.asList("Deadman", "Custom", "Threshold"), allModels);
 		fixInheritance("Threshold", Arrays.asList("Greater", "Lesser", "Range"), allModels);
 		fixInheritance("NotificationEndpoint", Arrays.asList("Slack", "PagerDuty", "HTTP", "Telegram"), allModels);
