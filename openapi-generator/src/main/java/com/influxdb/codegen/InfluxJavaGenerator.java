@@ -21,6 +21,7 @@
  */
 package com.influxdb.codegen;
 
+import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,6 +43,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
+import org.openapitools.codegen.CodegenProperty;
 import org.openapitools.codegen.languages.JavaClientCodegen;
 import org.openapitools.codegen.utils.ModelUtils;
 
@@ -294,6 +296,13 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 	}
 
 	@Override
+	public void postProcessModelProperty(final CodegenModel model, final CodegenProperty property)
+	{
+		super.postProcessModelProperty(model, property);
+		postProcessHelper.postProcessModelProperty(model, property);
+	}
+
+	@Override
 	public String toApiName(String name)
 	{
 
@@ -371,7 +380,7 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 	@Override
 	public String toEnumConstructorDefaultValue(final String value, final String datatype)
 	{
-		return toEnumDefaultValue(value.toUpperCase(), datatype);
+		return toEnumDefaultValue(value.toUpperCase().replace("-", "_"), datatype);
 	}
 
 	@Nullable

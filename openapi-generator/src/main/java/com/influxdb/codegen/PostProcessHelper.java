@@ -427,6 +427,17 @@ class PostProcessHelper
 		}
 	}
 
+	void postProcessModelProperty(final CodegenModel model, final CodegenProperty property) {
+
+		//
+		// If its a constant then set default value
+		//
+		if (property.isEnum && property.get_enum() != null && property.get_enum().size() == 1) {
+			property.isReadOnly = true;
+			property.defaultValue = generator.toEnumConstructorDefaultValue(property.get_enum().get(0), property.enumName);
+		}
+	}
+
 	void postProcessModels(Map<String, Object> allModels)
 	{
 
