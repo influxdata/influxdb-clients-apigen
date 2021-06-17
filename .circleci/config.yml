@@ -217,7 +217,6 @@ workflows:
       - generate-client:
           name: generate-java
           client: java
-          branch: "feat/api-from-openapi-repository"
       - check-generated-python:
           requires:
             - generate-python
