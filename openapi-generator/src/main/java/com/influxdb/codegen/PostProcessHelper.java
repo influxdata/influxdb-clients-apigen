@@ -67,16 +67,6 @@ class PostProcessHelper
 		}
 
 		//
-		// Fix DBRP schema
-		//
-		{
-			ComposedSchema dbrp = (ComposedSchema) openAPI.getComponents().getSchemas().get("DBRP");
-			Schema firstOneOf = dbrp.getOneOf().get(0);
-			Schema newDBRP = new ObjectSchema().properties(dbrp.getProperties()).required(firstOneOf.getRequired());
-			openAPI.getComponents().getSchemas().put("DBRP", newDBRP);
-		}
-
-		//
 		// Use generic scheme for Telegraf plugins instead of TelegrafInputCPU, TelegrafInputMem, ...
 		//
 		{
