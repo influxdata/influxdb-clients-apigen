@@ -450,6 +450,7 @@ class PostProcessHelper
 					if (interfaceModel.getParent() == null)
 					{
 						interfaceModel.setParent(model.classname);
+						interfaceModel.setParentSchema(model.getName());
 					}
 				}
 

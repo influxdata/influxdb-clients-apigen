@@ -135,8 +135,37 @@ public class InfluxPhpGenerator extends PhpClientCodegen implements InfluxGenera
 	@Override
 	public String toModelName(final String name) {
 		final String modelName = super.toModelName(name);
-		if ("PostBucketRequestRetentionRules".equals(modelName)) {
+		if ("RetentionRule".equals(modelName)) {
 			return "BucketRetentionRules";
+		}
+		
+		if ("Resource".equals(modelName)) {
+			return "PermissionResource";
+		}
+
+		if ("PatchDashboardRequest1".equals(modelName))
+		{
+			return "PatchDashboardRequest";
+		}
+
+		if ("ResourceMembersLinks".equals(modelName))
+		{
+			return "UsersLinks";
+		}
+
+		if ("UserResponse".equals(modelName))
+		{
+			return "User";
+		}
+
+		if ("User".equals(modelName))
+		{
+			return "PostUser";
+		}
+
+		if ("UserResponseLinks".equals(modelName))
+		{
+			return "UserLinks";
 		}
 
 		return modelName;
