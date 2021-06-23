@@ -217,6 +217,9 @@ workflows:
       - generate-client:
           name: generate-java
           client: java
+      - generate-client:
+          name: generate-php
+          client: php
       - check-generated-python:
           requires:
             - generate-python
@@ -245,6 +248,9 @@ workflows:
       - generate-client:
           name: generate-java
           client: java
+      - generate-client:
+          name: generate-php
+          client: php
       - check-generated-python:
           requires:
             - generate-python

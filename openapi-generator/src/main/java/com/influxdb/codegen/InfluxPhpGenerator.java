@@ -3,6 +3,8 @@ package com.influxdb.codegen;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Schema;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.languages.PhpClientCodegen;
@@ -11,7 +13,9 @@ import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class InfluxPhpGenerator extends PhpClientCodegen {
+public class InfluxPhpGenerator extends PhpClientCodegen implements InfluxGenerator {
+
+	private PostProcessHelper postProcessHelper;
 
 	public InfluxPhpGenerator() {
 		apiPackage = "service";
@@ -40,6 +44,15 @@ public class InfluxPhpGenerator extends PhpClientCodegen {
 	}
 
 	@Override
+	public void setGlobalOpenAPI(final OpenAPI openAPI)
+	{
+		super.setGlobalOpenAPI(openAPI);
+
+		postProcessHelper = new PostProcessHelper(this);
+		postProcessHelper.postProcessOpenAPI();
+	}
+
+	@Override
 	public String escapeText(String input) {
 		if (input == null) {
 			return input;
@@ -52,22 +65,7 @@ public class InfluxPhpGenerator extends PhpClientCodegen {
 	public CodegenOperation fromOperation(String path, String httpMethod, Operation operation, Map<String, Schema> definitions, OpenAPI openAPI) {
 
 		CodegenOperation op = super.fromOperation(path, httpMethod, operation, definitions, openAPI);
-
-		//
-		// Set base path
-		//
-		String url;
-		if (operation.getServers() != null) {
-			url = operation.getServers().get(0).getUrl();
-		} else if (openAPI.getPaths().get(path).getServers() != null) {
-			url = openAPI.getPaths().get(path).getServers().get(0).getUrl();
-		} else {
-			url = openAPI.getServers().get(0).getUrl();
-		}
-
-		if (!url.equals("/")) {
-			op.path = url + op.path;
-		}
+		postProcessHelper.postProcessOperation(path, operation, op, definitions);
 
 		return op;
 	}
@@ -89,102 +87,20 @@ public class InfluxPhpGenerator extends PhpClientCodegen {
 	}
 
 	@Override
-	public CodegenModel fromModel(final String name, final Schema model, final Map<String, Schema> allDefinitions) {
-		CodegenModel codegenModel = super.fromModel(name, model, allDefinitions);
+	public CodegenModel fromModel(final String name, final Schema schema, final Map<String, Schema> allDefinitions)
+	{
 
-		if (name.endsWith("ViewProperties") && !name.equals("ViewProperties"))
-		{
-			codegenModel.setParent("ViewProperties");
-			codegenModel.setParentSchema("ViewProperties");
-		}
+		CodegenModel model = super.fromModel(name, schema, allDefinitions);
+		postProcessHelper.postProcessModel(model, schema, allDefinitions);
 
-		if (allDefinitions.containsKey(name + "Base")) {
-			codegenModel.setParent(name + "Base");
-			codegenModel.setParentSchema(name + "Base");
-		}
-
-		if (name.equals("ViewProperties"))  {
-			codegenModel.setReadWriteVars(new ArrayList<>());
-			codegenModel.setRequiredVars(new ArrayList<>());
-			codegenModel.hasOnlyReadOnly = true;
-			codegenModel.hasRequired = false;
-		}
-
-		if (codegenModel.name.equals("LesserThreshold") || codegenModel.name.equals("GreaterThreshold")
-				|| codegenModel.name.equals("RangeThreshold")) {
-			codegenModel.setParent("Threshold");
-			codegenModel.setParentSchema("Threshold");
-		}
-
-		if (codegenModel.name.equals("CheckBase")) {
-			codegenModel.setParent("CheckDiscriminator");
-			codegenModel.setParentSchema("CheckDiscriminator");
-		}
-
-		if (codegenModel.name.equals("CheckDiscriminator")) {
-			codegenModel.setParent("PostCheck");
-			codegenModel.setParentSchema("PostCheck");
-		}
-
-		if (codegenModel.name.equals("NotificationEndpointBase")) {
-			codegenModel.setParent("NotificationEndpointDiscriminator");
-			codegenModel.setParentSchema("NotificationEndpointDiscriminator");
-		}
-
-		if (codegenModel.name.equals("PostCheck") || codegenModel.name.equals("PostNotificationEndpoint")) {
-			codegenModel.setParent(null);
-			codegenModel.setParentSchema(null);
-		}
-
-		if (codegenModel.name.equals("DeadmanCheck") || codegenModel.name.equals("ThresholdCheck")) {
-			codegenModel.setParent("Check");
-			codegenModel.setParentSchema("Check");
-		}
-
-		if (codegenModel.name.equals("SlackNotificationEndpoint") || codegenModel.name.equals("PagerDutyNotificationEndpoint")
-				|| codegenModel.name.equals("HTTPNotificationEndpoint")) {
-			codegenModel.setParent("NotificationEndpoint");
-			codegenModel.setParentSchema("NotificationEndpoint");
-		}
-
-		if (codegenModel.name.equals("NotificationEndpointDiscriminator")) {
-			codegenModel.setParent("PostNotificationEndpoint");
-			codegenModel.setParentSchema("PostNotificationEndpoint");
-		}
-
-		if (codegenModel.name.equals("NotificationRuleBase")) {
-			codegenModel.setParent("PostNotificationRule");
-			codegenModel.setParentSchema("PostNotificationRule");
-		}
-
-		if (codegenModel.name.endsWith("Discriminator")) {
-			codegenModel.hasOnlyReadOnly = true;
-			codegenModel.hasRequired = false;
-			codegenModel.readWriteVars.clear();
-		}
-
-		return codegenModel;
+		return model;
 	}
 
 	@Override
 	public Map<String, Object> postProcessAllModels(final Map<String, Object> models) {
 
 		Map<String, Object> allModels = super.postProcessAllModels(models);
-
-		for (Map.Entry<String, Object> entry : allModels.entrySet()) {
-
-			String modelName = entry.getKey();
-			Object modelConfig = entry.getValue();
-
-			CodegenModel model = getModel((HashMap) modelConfig);
-
-			if (model.getParent() != null) {
-				CodegenModel parentModel = getModel((HashMap) allModels.get(model.getParent()));
-				model.vendorExtensions.put("x-parent-classFilename", parentModel.getClassFilename());
-				model.vendorExtensions.put("x-has-parent-vars", !parentModel.getVars().isEmpty());
-				model.vendorExtensions.put("x-parent-vars", parentModel.getVars());
-			}
-		}
+		postProcessHelper.postProcessModels(allModels);
 
 		return allModels;
 	}
@@ -226,12 +142,36 @@ public class InfluxPhpGenerator extends PhpClientCodegen {
 		return modelName;
 	}
 
-	@Nonnull
-	private CodegenModel getModel(@Nonnull final HashMap modelConfig) {
-
-		HashMap models = (HashMap) ((ArrayList) modelConfig.get("models")).get(0);
-
-		return (CodegenModel) models.get("model");
+	@NotNull
+	@Override
+	public OpenAPI getOpenAPI()
+	{
+		return globalOpenAPI;
 	}
 
+	@Override
+	public String toEnumConstructorDefaultValue(final String value, final String datatype)
+	{
+		return "\"" + value + "\"";
+	}
+
+	@Nullable
+	@Override
+	public String optionalDatatypeKeyword()
+	{
+		return null;
+	}
+
+	@Override
+	public boolean compileTimeInheritance()
+	{
+		return true;
+	}
+
+	@NotNull
+	@Override
+	public Collection<String> getTypeAdapterImports()
+	{
+		return Collections.emptyList();
+	}
 }

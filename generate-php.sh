@@ -5,7 +5,7 @@ set -ex
 SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
 
 rm -rf ./build/influxdb-client-php/generated
-mvn -f ./openapi-generator/pom-php.xml -DswaggerLocation=./swagger.yml org.openapitools:openapi-generator-maven-plugin:generate
+mvn -f ./openapi-generator/pom-php.xml -DswaggerLocation="${SCRIPT_PATH}/oss.yml" org.openapitools:openapi-generator-maven-plugin:generate
 #### sync generated php files to src
 
 # delete old sources
