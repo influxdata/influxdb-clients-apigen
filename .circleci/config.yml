@@ -203,6 +203,42 @@ jobs:
             - ~/.m2
       - store_test_results:
           path: ./build/influxdb-client-java/test-results
+  check-generated-php:
+    docker:
+      - image: "circleci/php:7.4"
+        environment:
+          PIPENV_VENV_IN_PROJECT: true
+      - image: "influxdb:latest"
+        environment:
+          INFLUXD_HTTP_BIND_ADDRESS: :8086
+    steps:
+      - checkout
+      - influxdb-onboarding
+      - attach_workspace:
+          at: ./build
+      - restore_cache:
+          name: Restoring Composer Cache
+          keys:
+            - &cache-key composer-v1-{{ checksum "./build/influxdb-client-php/composer.json" }}
+            - composer-v1-
+      - run:
+          name: Install dependencies
+          command: |
+            cd ./build/influxdb-client-php
+            composer install -n --prefer-dist
+            composer require guzzlehttp/guzzle:6.5.3
+      - run:
+          name: Run tests
+          command: |
+            cd ./build/influxdb-client-php
+            vendor/bin/phpunit tests
+      - save_cache:
+          name: Saving Cache
+          key: *cache-key
+          paths:
+            - vendor
+      - store_test_results:
+          path: ./build/influxdb-client-php/build/
 
 workflows:
   version: 2
@@ -217,6 +253,9 @@ workflows:
       - generate-client:
           name: generate-java
           client: java
+      - generate-client:
+          name: generate-php
+          client: php
       - check-generated-python:
           requires:
             - generate-python
@@ -226,6 +265,9 @@ workflows:
       - check-generated-java:
           requires:
             - generate-java
+      - check-generated-php:
+          requires:
+            - generate-php
 
   nightly:
     triggers:
@@ -245,6 +287,9 @@ workflows:
       - generate-client:
           name: generate-java
           client: java
+      - generate-client:
+          name: generate-php
+          client: php
       - check-generated-python:
           requires:
             - generate-python
@@ -254,3 +299,6 @@ workflows:
       - check-generated-java:
           requires:
             - generate-java
+      - check-generated-php:
+          requires:
+            - generate-php

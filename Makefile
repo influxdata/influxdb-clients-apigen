@@ -78,6 +78,7 @@ pr-python:
 #### Php
 generate-php:
 	$(call git_checkout,influxdb-client-php)
+	@docker-compose run download-oss-swagger
 	@docker-compose run java ./generate-php.sh
 
 check-php:
