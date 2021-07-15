@@ -197,7 +197,7 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
         // For operations with more response type (Accept) generate additional implementation
         //
 		List<CodegenOperation> operationToSplit = operations.stream()
-				.filter(operation -> operation.produces.size() > 1)
+				.filter(operation -> operation.produces != null && operation.produces.size() > 1)
 				.collect(Collectors.toList());
 
 		operationToSplit.forEach(operation -> {

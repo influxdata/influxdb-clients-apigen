@@ -60,7 +60,7 @@ namespace {{packageName}}.{{apiPackage}}
         {{#allParams}}/// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
         {{/allParams}}/// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Task of {{#returnType}}{{returnType}}{{/returnType}}{{^returnType}}void{{/returnType}}</returns>
-        {{#returnType}}System.Threading.Tasks.Task<{{{returnType}}}>{{/returnType}}{{^returnType}}System.Threading.Tasks.Task{{/returnType}} {{operationId}}Async ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}, CancellationToken cancellationToken = default);
+        {{#returnType}}System.Threading.Tasks.Task<{{{returnType}}}>{{/returnType}}{{^returnType}}System.Threading.Tasks.Task{{/returnType}} {{operationId}}Async ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}CancellationToken cancellationToken = default);
 
         /// <summary>
         /// {{summary}}
@@ -72,7 +72,7 @@ namespace {{packageName}}.{{apiPackage}}
         {{#allParams}}/// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
         {{/allParams}}/// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Task of ApiResponse{{#returnType}} ({{returnType}}){{/returnType}}</returns>
-        System.Threading.Tasks.Task<ApiResponse<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Object{{/returnType}}>> {{operationId}}AsyncWithHttpInfo ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}, CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task<ApiResponse<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Object{{/returnType}}>> {{operationId}}AsyncWithHttpInfo ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}CancellationToken cancellationToken = default);
         {{/operation}}
         #endregion Asynchronous Operations
         {{/supportsAsync}}
@@ -318,7 +318,7 @@ namespace {{packageName}}.{{apiPackage}}
         {{#allParams}}/// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
         {{/allParams}}/// <param name="cancellationToken">Cancellation token</param>
         /// <returns>ApiResponse of {{#returnType}}{{returnType}}{{/returnType}}{{^returnType}}Object(void){{/returnType}}</returns>
-        public async System.Threading.Tasks.Task<IRestResponse> {{operationId}}WithIRestResponseAsync ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task<IRestResponse> {{operationId}}WithIRestResponseAsync ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}CancellationToken cancellationToken = default)
         {
             {{#allParams}}
             {{#required}}
@@ -651,10 +651,10 @@ namespace {{packageName}}.{{apiPackage}}
         {{#allParams}}/// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
         {{/allParams}}/// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Task of {{#returnType}}{{returnType}}{{/returnType}}{{^returnType}}void{{/returnType}}</returns>
-        {{#returnType}}public async System.Threading.Tasks.Task<{{{returnType}}}>{{/returnType}}{{^returnType}}public System.Threading.Tasks.Task{{/returnType}} {{operationId}}Async ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}, CancellationToken cancellationToken = default)
+        {{#returnType}}public async System.Threading.Tasks.Task<{{{returnType}}}>{{/returnType}}{{^returnType}}public System.Threading.Tasks.Task{{/returnType}} {{operationId}}Async ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}CancellationToken cancellationToken = default)
         {
-             {{#returnType}}ApiResponse<{{{returnType}}}> localVarResponse = await {{operationId}}AsyncWithHttpInfo({{#allParams}}{{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}, cancellationToken).ConfigureAwait(false);
-             return localVarResponse.Data;{{/returnType}}{{^returnType}}return {{operationId}}AsyncWithHttpInfo({{#allParams}}{{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}, cancellationToken);{{/returnType}}
+             {{#returnType}}ApiResponse<{{{returnType}}}> localVarResponse = await {{operationId}}AsyncWithHttpInfo({{#allParams}}{{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}cancellationToken).ConfigureAwait(false);
+             return localVarResponse.Data;{{/returnType}}{{^returnType}}return {{operationId}}AsyncWithHttpInfo({{#allParams}}{{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}cancellationToken);{{/returnType}}
 
         }
 
@@ -665,10 +665,10 @@ namespace {{packageName}}.{{apiPackage}}
         {{#allParams}}/// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
         {{/allParams}}/// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Task of ApiResponse{{#returnType}} ({{returnType}}){{/returnType}}</returns>
-        public async System.Threading.Tasks.Task<ApiResponse<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Object{{/returnType}}>> {{operationId}}AsyncWithHttpInfo ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task<ApiResponse<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Object{{/returnType}}>> {{operationId}}AsyncWithHttpInfo ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}CancellationToken cancellationToken = default)
         {
             // make the HTTP request
-            IRestResponse localVarResponse = await {{operationId}}AsyncWithIRestResponse({{#allParams}}{{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}, cancellationToken).ConfigureAwait(false);
+            IRestResponse localVarResponse = await {{operationId}}AsyncWithIRestResponse({{#allParams}}{{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}cancellationToken).ConfigureAwait(false);
 
             int localVarStatusCode = (int) localVarResponse.StatusCode;
 
@@ -697,7 +697,7 @@ namespace {{packageName}}.{{apiPackage}}
         {{#allParams}}/// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
         {{/allParams}}/// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Task of IRestResponse{{#returnType}} ({{returnType}}){{/returnType}}</returns>
-        public async System.Threading.Tasks.Task<IRestResponse> {{operationId}}AsyncWithIRestResponse ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}, CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task<IRestResponse> {{operationId}}AsyncWithIRestResponse ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}CancellationToken cancellationToken = default)
         {
             {{#allParams}}
             {{#required}}
