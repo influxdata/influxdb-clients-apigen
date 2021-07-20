@@ -817,7 +817,7 @@ class PostProcessHelper
 		}
 
 		// remove discriminator property from inherited Discriminator
-		if (discriminatorModel != base)
+		if (discriminatorModel != base && discriminatorModel != schema)
 		{
 			if (generator.compileTimeInheritance() && base.getDiscriminator() == null)
 			{
