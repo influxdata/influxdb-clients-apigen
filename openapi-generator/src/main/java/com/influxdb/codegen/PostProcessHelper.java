@@ -706,12 +706,17 @@ class PostProcessHelper
 
 			if (discriminatorModelBase != discriminatorModel)
 			{
-				discriminatorModelBase.setParentModel(discriminatorModel);
-				discriminatorModelBase.setParent(discriminatorModel.getName());
-				discriminatorModelBase.setParentSchema(discriminatorModel.getName());
-				setToParentVars(discriminatorModelBase, discriminatorModel.getParentVars());
+				CodegenModel discriminatorModelBaseParen = discriminatorModel;
+				if (!allModels.containsKey(name + "Discriminator"))
+				{
+					 discriminatorModelBaseParen = base;
+				}
+				discriminatorModelBase.setParentModel(discriminatorModelBaseParen);
+				discriminatorModelBase.setParent(discriminatorModelBaseParen.getName());
+				discriminatorModelBase.setParentSchema(discriminatorModelBaseParen.getName());
+				setToParentVars(discriminatorModelBase, discriminatorModelBaseParen.getParentVars());
 				setExtensionParentVars(discriminatorModelBase, base.getVars());
-				setReadWriteWars(discriminatorModelBase, discriminatorModel.getParentVars());
+				setReadWriteWars(discriminatorModelBase, discriminatorModelBaseParen.getParentVars());
 			}
 
 			// set correct name for discriminator
@@ -777,15 +782,13 @@ class PostProcessHelper
 
 			if (!generator.compileTimeInheritance())
 			{
-				// If there is no intermediate entity, than leave current parent schema
-				if (allModels.containsKey(name + "Discriminator"))
-				{
-					rootModel.setParentSchema(null);
-					rootModel.setParent(null);
-				}
+				rootModel.setParentSchema(null);
+				rootModel.setParent(null);
+				rootModel.setParentModel(null);
+				rootModel.getVendorExtensions().put("x-parent-vars", null);
 
 				boolean presentDiscriminatorVar = rootModel
-						.getRequiredVars()
+						.getVars()
 						.stream()
 						.anyMatch(codegenProperty -> codegenProperty.getBaseName().equals(discriminatorPropertyName));
 
