@@ -19,6 +19,7 @@ import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ComposedSchema;
+import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.Discriminator;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.ObjectSchema;
@@ -27,6 +28,7 @@ import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.HeaderParameter;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.intellij.lang.annotations.Language;
@@ -64,6 +66,36 @@ class PostProcessHelper
 			Schema schema = ((ComposedSchema) mediaType.getSchema()).getOneOf().get(0);
 			mediaType.schema(schema);
 			dropSchemas("InfluxQLQuery");
+		}
+
+		//
+		// Use first response type for multiple response type by oneOf (Dashboard, DashboardWithViewProperties)
+		//
+		for (Map.Entry<String, PathItem> entry : openAPI.getPaths().entrySet())
+		{
+			for (Operation operation : entry.getValue().readOperations())
+			{
+				for (Map.Entry<String, ApiResponse> e : operation.getResponses().entrySet())
+				{
+					Content content = e.getValue().getContent();
+					if (content == null)
+					{
+						continue;
+					}
+					for (MediaType mediaType : content.values())
+					{
+						Schema schema = mediaType.getSchema();
+						if (schema instanceof ComposedSchema)
+						{
+							List<Schema> composedSchema = ((ComposedSchema) (schema)).getOneOf();
+							if (composedSchema != null && composedSchema.size() > 1)
+							{
+								mediaType.setSchema(composedSchema.get(0));
+							}
+						}
+					}
+				}
+			}
 		}
 
 		//
