@@ -25,10 +25,12 @@ import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableMap;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
@@ -270,6 +272,28 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 				operations.add(operations.indexOf(operation) + 1, codegenOperation);
 			});
 		});
+
+		//
+		// Add Reactive operation for /write
+		//
+		if (((Map)objs.get("operations")).get("pathPrefix").equals("write")) {
+			CodegenOperation operation = operations.get(0);
+			CodegenOperation operationRx = new CodegenOperation();
+			operationRx.baseName = operation.baseName;
+			operationRx.summary = operation.summary;
+			operationRx.notes = operation.notes;
+			operationRx.allParams = operation.allParams;
+			operationRx.httpMethod = operation.httpMethod;
+			operationRx.path = operation.path;
+			operationRx.returnType = operation.returnType;
+			operationRx.operationId = operation.operationId + "Rx";
+			operationRx.vendorExtensions.put("x-response-type", "Single<Response<Void>>");
+			operations.add(operationRx);
+
+			List<Map<String, String>> imports = (List<Map<String, String>>) objs.get("imports");
+			imports.add(ImmutableMap.of("import", "io.reactivex.Single", "classname", "Single"));
+			imports.add(ImmutableMap.of("import", "retrofit2.Response", "classname", "Response"));
+		}
 
 		//
 		// Add @Streaming annotation for Query
