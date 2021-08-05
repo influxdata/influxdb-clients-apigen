@@ -271,6 +271,16 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 			});
 		});
 
+		//
+		// Add @Streaming annotation for Query
+		//
+		if (((Map)objs.get("operations")).get("pathPrefix").equals("query")) {
+			operations
+					.stream()
+					.filter(it -> it.returnType.equals("ResponseBody") & it.path.equals("api/v2/query"))
+					.forEach(operation -> operation.vendorExtensions.put("x-response-streaming", true));
+		}
+
 		return operationsWithModels;
 	}
 

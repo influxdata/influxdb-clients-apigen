@@ -65,7 +65,8 @@ public interface {{classname}} {
   {{/-first}}
   {{/prioritizedContentTypes}}
   {{/formParams}}
-  @{{httpMethod}}("{{{path}}}")
+  @{{httpMethod}}("{{{path}}}"){{#vendorExtensions.x-response-streaming}}
+  @Streaming{{/vendorExtensions.x-response-streaming}}
   {{^doNotUseRx}}{{#useRxJava}}Observable<{{#isResponseFile}}ResponseBody{{/isResponseFile}}{{^isResponseFile}}{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Void{{/returnType}}{{/isResponseFile}}>{{/useRxJava}}{{#useRxJava2}}{{#returnType}}Observable<{{#isResponseFile}}ResponseBody{{/isResponseFile}}{{^isResponseFile}}{{{returnType}}}{{/isResponseFile}}>{{/returnType}}{{^returnType}}Completable{{/returnType}}{{/useRxJava2}}{{/doNotUseRx}}{{#doNotUseRx}}Call<{{#isResponseFile}}ResponseBody{{/isResponseFile}}{{^isResponseFile}}{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Void{{/returnType}}{{/isResponseFile}}>{{/doNotUseRx}} {{operationId}}({{^allParams}});{{/allParams}}
     {{#allParams}}{{>libraries/retrofit2/queryParams}}{{>libraries/retrofit2/pathParams}}{{>libraries/retrofit2/headerParams}}{{>libraries/retrofit2/bodyParams}}{{>libraries/retrofit2/formParams}}{{#hasMore}}, {{/hasMore}}{{^hasMore}}
   );{{/hasMore}}{{/allParams}}
