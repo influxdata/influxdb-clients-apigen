@@ -47,11 +47,32 @@ class PostProcessHelper
 {
 	private final OpenAPI openAPI;
 	private final InfluxGenerator generator;
+	/**
+	 * For "PostDashboards" we prefer to use "DashboardWithViewProperties".
+	 *
+	 * <ul>
+	 *     <li>key - operation id</li>
+	 *     <li>value - schema name</li>
+	 * </ul>
+	 */
+	private final Map<String, String> preferredSchemaForMultipleResponseType = new HashMap<>();
 
 	public PostProcessHelper(InfluxGenerator generator)
 	{
 		this.generator = generator;
 		this.openAPI = generator.getOpenAPI();
+	}
+
+	/**
+	 * @param operationId "PostDashboards"
+	 * @param schemaName  "DashboardWithViewProperties"
+	 * @return this
+	 */
+	@Nonnull
+	PostProcessHelper addPreferredSchemaForMultipleResponseType(String operationId, String schemaName)
+	{
+		preferredSchemaForMultipleResponseType.put(operationId, schemaName);
+		return this;
 	}
 
 	void postProcessOpenAPI()
@@ -90,7 +111,20 @@ class PostProcessHelper
 							List<Schema> composedSchema = ((ComposedSchema) (schema)).getOneOf();
 							if (composedSchema != null && composedSchema.size() > 1)
 							{
-								mediaType.setSchema(composedSchema.get(0));
+								String preferredSchemaName = preferredSchemaForMultipleResponseType
+										.get(operation.getOperationId());
+
+								if (preferredSchemaName != null)
+								{
+									composedSchema.stream()
+											.filter(it -> it.get$ref().endsWith(preferredSchemaName))
+											.findFirst()
+											.ifPresent(mediaType::setSchema);
+								}
+								else
+								{
+									mediaType.setSchema(composedSchema.get(0));
+								}
 							}
 						}
 					}
