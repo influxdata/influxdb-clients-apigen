@@ -310,7 +310,7 @@ public class {{classname}}{{#vendorExtensions.x-has-generic-type}}{{{vendorExten
   };
 {{/parcelableModel}}
 {{#vendorExtensions.x-type-adapters.entrySet}}
-  public class {{value.classname}} implements JsonDeserializer<Object>, JsonSerializer<Object> {
+  public static class {{value.classname}} implements JsonDeserializer<Object>, JsonSerializer<Object> {
 
     public {{value.classname}}() {
     }
