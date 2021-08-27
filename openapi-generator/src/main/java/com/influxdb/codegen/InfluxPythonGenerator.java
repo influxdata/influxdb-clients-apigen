@@ -50,7 +50,8 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
 	{
 		super.setGlobalOpenAPI(openAPI);
 
-		postProcessHelper = new PostProcessHelper(this);
+		postProcessHelper = new PostProcessHelper(this)
+				.addPreferredSchemaForMultipleResponseType("GetDashboardsID", "DashboardWithViewProperties");
 		postProcessHelper.postProcessOpenAPI();
 	}
 
