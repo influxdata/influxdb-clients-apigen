@@ -200,7 +200,7 @@ public class InfluxPhpGenerator extends PhpClientCodegen implements InfluxGenera
 	@Override
 	public boolean usesOwnAuthorizationSchema()
 	{
-		return false;
+		return true;
 	}
 
 	@NotNull
