@@ -24,6 +24,8 @@ public interface InfluxGenerator
 
 	boolean compileTimeInheritance();
 
+	boolean usesOwnAuthorizationSchema();
+
 	@Nonnull
 	Collection<String> getTypeAdapterImports();
 }

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Lists;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Schema;
@@ -127,6 +128,17 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
     }
 
 	@Override
+	public void processOpenAPI(OpenAPI openAPI) {
+
+		List<String> serviceInits = Lists.newArrayList(
+				"influxdb_client/client/write/__init__.py",
+				"influxdb_client/client/__init__.py",
+				"tests/__init__.py");
+		
+		postProcessHelper.copyFiles("influxdb_client/service/__init__.py", serviceInits, this);
+	}
+
+	@Override
 	public String toModelName(final String name) {
 		final String modelName = super.toModelName(name);
 		if ("RetentionRule".equals(modelName)) {
@@ -163,6 +175,12 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
 	public boolean compileTimeInheritance()
 	{
 		return false;
+	}
+
+	@Override
+	public boolean usesOwnAuthorizationSchema()
+	{
+		return true;
 	}
 
 	@NotNull

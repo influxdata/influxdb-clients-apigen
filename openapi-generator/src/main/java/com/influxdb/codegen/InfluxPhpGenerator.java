@@ -197,6 +197,12 @@ public class InfluxPhpGenerator extends PhpClientCodegen implements InfluxGenera
 		return true;
 	}
 
+	@Override
+	public boolean usesOwnAuthorizationSchema()
+	{
+		return false;
+	}
+
 	@NotNull
 	@Override
 	public Collection<String> getTypeAdapterImports()

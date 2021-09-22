@@ -1,6 +1,8 @@
 package com.influxdb.codegen;
 
 import javax.annotation.Nonnull;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,22 +31,28 @@ import io.swagger.v3.oas.models.parameters.HeaderParameter;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
+import org.openapitools.codegen.CodegenConfig;
 import org.openapitools.codegen.CodegenDiscriminator;
 import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenProperty;
 import org.openapitools.codegen.InlineModelResolver;
 import org.openapitools.codegen.utils.ModelUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Jakub Bednar (18/05/2021 13:20)
  */
 class PostProcessHelper
 {
+	private static final Logger LOG = LoggerFactory.getLogger(PostProcessHelper.class);
+
 	private final OpenAPI openAPI;
 	private final InfluxGenerator generator;
 	/**
@@ -77,6 +85,14 @@ class PostProcessHelper
 
 	void postProcessOpenAPI()
 	{
+		//
+		// Drop available security schemas if the client uses own definition of Auth header
+		if (generator.usesOwnAuthorizationSchema())
+		{
+			openAPI.getSecurity().clear();
+		}
+		
+		//
 		//
 		// Drop supports for InfluxQL
 		//
@@ -680,6 +696,36 @@ class PostProcessHelper
 		HashMap models = (HashMap) ((ArrayList) modelConfig.get("models")).get(0);
 
 		return (CodegenModel) models.get("model");
+	}
+
+	/**
+	 * Copy generated files to other location.
+	 *
+	 * @param sourceFile  source file path, path should be relative to client root path
+	 * @param outputFiles output file paths, path should be relative to client root path
+	 * @param config      with configured output
+	 */
+	void copyFiles(@Nonnull final String sourceFile,
+				   @Nonnull final Collection<String> outputFiles,
+				   @Nonnull final CodegenConfig config)
+	{
+		String outputFolder = config.outputFolder() + File.separator;
+
+		File source = new File(outputFolder + sourceFile);
+		for (String outputFile : outputFiles)
+		{
+			try
+			{
+				File output = new File(outputFolder + outputFile);
+
+				LOG.info("copy file " + source + " -> " + output);
+				FileUtils.copyFile(source, output);
+			}
+			catch (IOException e)
+			{
+				throw new RuntimeException(e);
+			}
+		}
 	}
 
 	private void changePropertySchema(final String property, final String schema, final Schema propertySchema)
