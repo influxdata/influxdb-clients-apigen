@@ -209,6 +209,12 @@ public class InfluxCSharpGenerator extends CSharpClientCodegen implements Influx
 		return true;
 	}
 
+	@Override
+	public boolean usesOwnAuthorizationSchema()
+	{
+		return false;
+	}
+
 	@NotNull
 	@Override
 	public Collection<String> getTypeAdapterImports()
