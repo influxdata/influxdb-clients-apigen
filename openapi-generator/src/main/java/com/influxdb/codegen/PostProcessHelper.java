@@ -31,6 +31,7 @@ import io.swagger.v3.oas.models.parameters.HeaderParameter;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -89,7 +90,11 @@ class PostProcessHelper
 		// Drop available security schemas if the client uses own definition of Auth header
 		if (generator.usesOwnAuthorizationSchema())
 		{
-			openAPI.getSecurity().clear();
+			List<SecurityRequirement> security = openAPI.getSecurity();
+			if (security != null)
+			{
+				security.clear();
+			}
 		}
 		
 		//
