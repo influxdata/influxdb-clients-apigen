@@ -9,8 +9,6 @@ import re  # noqa: F401
 # python 2 and python 3 compatibility library
 import six
 
-from {{packageName}}.api_client import ApiClient
-
 
 {{#operations}}
 class {{classname}}(object):
@@ -24,7 +22,7 @@ class {{classname}}(object):
     def __init__(self, api_client=None):  # noqa: E501,D401,D403
         """{{classname}} - a operation defined in OpenAPI."""
         if api_client is None:
-            api_client = ApiClient()
+            raise ValueError("Invalid value for `api_client`, must be defined.")
         self.api_client = api_client
 {{#operation}}
 
