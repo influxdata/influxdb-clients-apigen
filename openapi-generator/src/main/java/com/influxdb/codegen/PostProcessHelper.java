@@ -223,23 +223,19 @@ class PostProcessHelper
 		{
 			openAPI.getPaths().forEach((path, pathItem) -> {
 				pathItem
-						.readOperations()
-						.forEach(operation -> {
-							if (operation != null && operation.getSecurity() != null && !operation.getSecurity().isEmpty())
+						.readOperations().stream().filter(operation -> operation != null && operation.getSecurity() != null && !operation.getSecurity().isEmpty()).forEach(operation -> {
+							boolean containsBasicAuth = operation
+									.getSecurity()
+									.stream()
+									.anyMatch(securityRequirement -> securityRequirement.containsKey("BasicAuth") ||
+											securityRequirement.containsKey("BasicAuthentication"));
+							if (containsBasicAuth)
 							{
-								boolean containsBasicAuth = operation
-										.getSecurity()
-										.stream()
-										.anyMatch(securityRequirement -> securityRequirement.containsKey("BasicAuth"));
-
-								if (containsBasicAuth)
-								{
-									Parameter authorization = new HeaderParameter()
-											.name("Authorization")
-											.schema(new StringSchema())
-											.description("An auth credential for the Basic scheme");
-									operation.addParametersItem(authorization);
-								}
+								Parameter authorization = new HeaderParameter()
+										.name("Authorization")
+										.schema(new StringSchema())
+										.description("An auth credential for the Basic scheme");
+								operation.addParametersItem(authorization);
 							}
 						});
 			});
