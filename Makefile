@@ -66,6 +66,7 @@ pr-csharp:
 generate-python:
 	$(call git_checkout,influxdb-client-python)
 	@docker-compose run download-oss-swagger
+	@docker-compose run download-managed-functions
 	@docker-compose run java ./generate-python.sh
 
 check-python:

@@ -14,8 +14,19 @@ commands:
     steps:
       - run: mvn -f openapi-generator/pom.xml clean install -DskipTests
   download-oss-swagger:
+    parameters:
+      contracts:
+        type: string
+        description: separete by space
+        default: "oss.yml"
     steps:
-      - run: curl https://raw.githubusercontent.com/influxdata/openapi/master/contracts/oss.yml --output ./oss.yml
+      - run:
+          name: "Download contracts: << parameters.contracts >>"
+          command: |
+              contracts="<< parameters.contracts >>"
+              for contract in `echo $contracts`; do
+                curl https://raw.githubusercontent.com/influxdata/openapi/master/contracts/$contract --output ./$contract
+              done
   clone-client:
     parameters:
       client:
@@ -38,6 +49,9 @@ jobs:
       branch:
         type: string
         default: "master"
+      contracts:
+        type: string
+        default: "oss.yml"
     steps:
       - checkout
       - restore_cache:
@@ -46,7 +60,8 @@ jobs:
             - &cache-key maven-cache_v1-{{ checksum "openapi-generator/pom.xml" }}
             - maven-cache_v1
       - build-generator
-      - download-oss-swagger
+      - download-oss-swagger:
+          contracts: << parameters.contracts >>
       - clone-client:
           client: influxdb-client-<< parameters.client >>
           branch: << parameters.branch >>
@@ -247,6 +262,7 @@ workflows:
       - generate-client:
           name: generate-python
           client: python
+          contracts: "oss.yml managed-functions.yml"
       - generate-client:
           name: generate-csharp
           client: csharp
@@ -281,6 +297,7 @@ workflows:
       - generate-client:
           name: generate-python
           client: python
+          contracts: "oss.yml managed-functions.yml"
       - generate-client:
           name: generate-csharp
           client: csharp
