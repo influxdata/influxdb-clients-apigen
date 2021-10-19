@@ -299,6 +299,19 @@ class PostProcessHelper
 				parameter.setDescription(description.trim());
 			}
 		});
+
+		//
+		// Fix Managed Functions
+		//
+		if (openAPI.getPaths().containsKey("/functions")) {
+			Schema functionHTTPResponseData = openAPI.getComponents().getSchemas().get("FunctionHTTPResponseData");
+			functionHTTPResponseData.setType("string");
+			openAPI.getComponents().getSchemas().remove("FunctionHTTPResponse");
+			openAPI.getComponents().getSchemas().remove("FunctionHTTPResponseNoData");
+
+			Schema functionRunBase = openAPI.getComponents().getSchemas().get("FunctionRunBase");
+			functionRunBase.getProperties().remove("response");
+		}
 	}
 
 	public void postProcessModel(final CodegenModel model, final Schema modelSchema, final Map<String, Schema> allDefinitions)
