@@ -62,6 +62,10 @@ jobs:
       - build-generator
       - download-oss-swagger:
           contracts: << parameters.contracts >>
+      - run:
+          name: "Merge Contracts: << parameters.contracts >>"
+          command: |
+            mvn -f openapi-generator/pom.xml exec:java -Dexec.mainClass="com.influxdb.MergeContracts" -Dexec.args="<< parameters.contracts >>"
       - clone-client:
           client: influxdb-client-<< parameters.client >>
           branch: << parameters.branch >>

@@ -67,6 +67,7 @@ generate-python:
 	$(call git_checkout,influxdb-client-python)
 	@docker-compose run download-oss-swagger
 	@docker-compose run download-managed-functions
+	@docker-compose run java mvn -f ./openapi-generator/pom.xml compile exec:java -Dexec.mainClass="com.influxdb.MergeContracts" -Dexec.args="oss.yml managed-functions.yml"
 	@docker-compose run java ./generate-python.sh
 
 check-python:
