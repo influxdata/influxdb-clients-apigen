@@ -305,6 +305,13 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 					.forEach(operation -> operation.vendorExtensions.put("x-response-streaming", true));
 		}
 
+		//
+		// Add ResponseBody type for /ping endpoint => avaible to read Headers
+		//
+		if (((Map)objs.get("operations")).get("pathPrefix").equals("ping")) {
+			operations.forEach(operation -> operation.returnType = "ResponseBody");
+		}
+
 		return operationsWithModels;
 	}
 
