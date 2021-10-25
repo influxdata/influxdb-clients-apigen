@@ -688,6 +688,15 @@ class PostProcessHelper
 				}
 			});
 		}
+
+		//
+		// Trim notes.
+		//
+		String notes = op.notes;
+		if (notes != null)
+		{
+			op.notes = notes.trim();
+		}
 	}
 
 	@Nonnull
