@@ -48,4 +48,11 @@ services:
     working_dir: /code
     command: curl https://raw.githubusercontent.com/influxdata/openapi/master/contracts/oss.yml --output /code/oss.yml
 
+  download-invocable-scripts:
+    image: curlimages/curl:7.76.1
+    volumes:
+      - .:/code
+    working_dir: /code
+    command: curl https://raw.githubusercontent.com/influxdata/openapi/master/contracts/invocable-scripts.yml --output /code/invocable-scripts.yml
+
 
