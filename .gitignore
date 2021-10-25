@@ -22,5 +22,5 @@ openapi-generator/target
 /openapi-generator/target/
 .DS_Store
 oss.yml
-managed-functions.yml
+invocable-scripts.yml
 generate-*-local.sh

@@ -266,7 +266,7 @@ workflows:
       - generate-client:
           name: generate-python
           client: python
-          contracts: "oss.yml managed-functions.yml"
+          contracts: "oss.yml invocable-scripts.yml"
       - generate-client:
           name: generate-csharp
           client: csharp
@@ -301,7 +301,7 @@ workflows:
       - generate-client:
           name: generate-python
           client: python
-          contracts: "oss.yml managed-functions.yml"
+          contracts: "oss.yml invocable-scripts.yml"
       - generate-client:
           name: generate-csharp
           client: csharp
