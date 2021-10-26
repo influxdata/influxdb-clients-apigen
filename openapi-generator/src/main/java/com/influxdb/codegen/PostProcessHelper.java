@@ -281,15 +281,6 @@ class PostProcessHelper
 		}
 
 		//
-		// Add missing permission resource type
-		//
-		{
-			Schema resource = openAPI.getComponents().getSchemas().get("Resource");
-			StringSchema type = (StringSchema) resource.getProperties().get("type");
-			type.getEnum().add("annotations");
-		}
-
-		//
 		// Trim description
 		//
 		openAPI.getComponents().getParameters().forEach((s, parameter) -> {
