@@ -96,19 +96,6 @@ class PostProcessHelper
 				security.clear();
 			}
 		}
-		
-		//
-		//
-		// Drop supports for InfluxQL
-		//
-		{
-			RequestBody requestBody = openAPI.getPaths().get("/query").getPost().getRequestBody();
-			MediaType mediaType = requestBody.getContent().get("application/json");
-			// Set correct schema to `Query` object
-			Schema schema = ((ComposedSchema) mediaType.getSchema()).getOneOf().get(0);
-			mediaType.schema(schema);
-			dropSchemas("InfluxQLQuery");
-		}
 
 		//
 		// Use first response type for multiple response type by oneOf (Dashboard, DashboardWithViewProperties)
