@@ -390,15 +390,15 @@ index a3a448e0ee..cabbd72b32 100644
      @Override
      public VariablesApi getVariablesApi() {
 diff --git a/client/src/main/java/com/influxdb/client/internal/TasksApiImpl.java b/client/src/main/java/com/influxdb/client/internal/TasksApiImpl.java
-index 2ad4e11bb4..aec9e1f792 100644
+index 06b99be831..ccd828eb92 100644
 --- a/client/src/main/java/com/influxdb/client/internal/TasksApiImpl.java
 +++ b/client/src/main/java/com/influxdb/client/internal/TasksApiImpl.java
-@@ -126,7 +126,7 @@ final class TasksApiImpl extends AbstractRestClient implements TasksApi {
-                                 @Nullable final String userID,
-                                 @Nullable final String orgID) {
- 
--        Call<Tasks> call = service.getTasks(null, null, afterID, userID, null, orgID, null, null);
-+        Call<Tasks> call = service.getTasks(null, null, afterID, userID, null, orgID, null, null, null);
+@@ -139,7 +139,7 @@ final class TasksApiImpl extends AbstractRestClient implements TasksApi {
+     @Override
+     public List<Task> findTasks(@Nonnull final TasksQuery query) {
+         Call<Tasks> call = service.getTasks(null, query.getName(), query.getAfter(), query.getUser(),
+-                query.getOrg(), query.getOrgID(), query.getStatus(), query.getLimit());
++                query.getOrg(), query.getOrgID(), query.getStatus(), query.getLimit(), null);
  
          Tasks tasks = execute(call);
          LOG.log(Level.FINEST, "findTasks found: {0}", tasks);
