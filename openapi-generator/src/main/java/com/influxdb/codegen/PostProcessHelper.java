@@ -97,9 +97,6 @@ class PostProcessHelper
 			}
 		}
 
-		//
-		// Use first response type for multiple response type by oneOf (Dashboard, DashboardWithViewProperties)
-		//
 		for (Map.Entry<String, PathItem> entry : openAPI.getPaths().entrySet())
 		{
 			for (Operation operation : entry.getValue().readOperations())
@@ -114,6 +111,9 @@ class PostProcessHelper
 					for (MediaType mediaType : content.values())
 					{
 						Schema schema = mediaType.getSchema();
+						//
+						// Use first response type for multiple response type by oneOf (Dashboard, DashboardWithViewProperties)
+						//
 						if (schema instanceof ComposedSchema)
 						{
 							List<Schema> composedSchema = ((ComposedSchema) (schema)).getOneOf();
@@ -134,6 +134,11 @@ class PostProcessHelper
 									mediaType.setSchema(composedSchema.get(0));
 								}
 							}
+						}
+						// set name of response schema for inline schemas
+						if (schema instanceof ObjectSchema && schema.getTitle() == null)
+						{
+							schema.title(operation.getOperationId() + "Response");
 						}
 					}
 				}
@@ -478,12 +483,14 @@ class PostProcessHelper
 		}
 	}
 
-	void postProcessModelProperty(final CodegenModel model, final CodegenProperty property) {
+	void postProcessModelProperty(final CodegenModel model, final CodegenProperty property)
+	{
 
 		//
 		// If its a constant then set default value
 		//
-		if (property.isEnum && property.get_enum() != null && property.get_enum().size() == 1) {
+		if (property.isEnum && property.get_enum() != null && property.get_enum().size() == 1)
+		{
 			property.isReadOnly = true;
 			property.defaultValue = generator.toEnumConstructorDefaultValue(property.get_enum().get(0), property.enumName);
 		}
@@ -599,7 +606,8 @@ class PostProcessHelper
 			if (model.getParentModel() != null && model.getParentModel().getReadWriteVars() != null)
 			{
 				List<CodegenProperty> parentReadWriteVars = model.getParentModel().getReadWriteVars();
-				if (model.getParentVars().size() != parentReadWriteVars.size()) {
+				if (model.getParentVars().size() != parentReadWriteVars.size())
+				{
 					model.setParentVars(parentReadWriteVars);
 				}
 			}
@@ -809,7 +817,7 @@ class PostProcessHelper
 				CodegenModel discriminatorModelBaseParen = discriminatorModel;
 				if (!allModels.containsKey(name + "Discriminator"))
 				{
-					 discriminatorModelBaseParen = base;
+					discriminatorModelBaseParen = base;
 				}
 				discriminatorModelBase.setParentModel(discriminatorModelBaseParen);
 				discriminatorModelBase.setParent(discriminatorModelBaseParen.getName());
