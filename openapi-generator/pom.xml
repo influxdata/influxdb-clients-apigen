@@ -34,6 +34,7 @@
 
 	<modules>
 		<module>core</module>
+		<module>3_version</module>
 		<module>5_version</module>
 	</modules>
 	
@@ -53,6 +54,12 @@
 
 	<dependencyManagement>
 		<dependencies>
+
+			<dependency>
+				<groupId>com.influxdb</groupId>
+				<artifactId>openapi-generator-core</artifactId>
+				<version>1.0.0</version>
+			</dependency>
 
 			<dependency>
 				<groupId>org.jetbrains</groupId>

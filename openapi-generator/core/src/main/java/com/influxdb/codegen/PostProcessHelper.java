@@ -3,6 +3,7 @@ package com.influxdb.codegen;
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -260,28 +261,55 @@ class PostProcessHelper
 		//
 		if (generator.compileTimeInheritance())
 		{
-			InlineModelResolver inlineModelResolver = new InlineModelResolver();
-			inlineModelResolver.flatten(openAPI);
-
-			String[] schemaNames = openAPI.getComponents().getSchemas().keySet().toArray(new String[0]);
-			for (String schemaName : schemaNames)
+			try
 			{
+				InlineModelResolver inlineModelResolver = new InlineModelResolver();
+				Method flatten = inlineModelResolver.getClass().getDeclaredMethod("flatten", OpenAPI.class);
+				flatten.setAccessible(true);
+				flatten.invoke(inlineModelResolver, openAPI);
 
-				Schema schema = openAPI.getComponents().getSchemas().get(schemaName);
-				if (schema instanceof ComposedSchema)
+				String[] schemaNames = openAPI.getComponents().getSchemas().keySet().toArray(new String[0]);
+				for (String schemaName : schemaNames)
 				{
-					List<Schema> allOf = ((ComposedSchema) schema).getAllOf();
-					if (allOf != null)
-					{
-						allOf.forEach(child -> {
 
-							if (child instanceof ObjectSchema)
-							{
-								inlineModelResolver.flattenProperties(child.getProperties(), schemaName);
-							}
-						});
+					Schema schema = openAPI.getComponents().getSchemas().get(schemaName);
+					if (schema instanceof ComposedSchema)
+					{
+						List<Schema> allOf = ((ComposedSchema) schema).getAllOf();
+						if (allOf != null)
+						{
+							allOf.forEach(child -> {
+
+								Schema objectSchema = null;
+								if (child.get$ref() != null)
+								{
+									objectSchema = openAPI.getComponents().getSchemas().get(ModelUtils.getSimpleRef(child.get$ref()));
+								}
+								else if (child instanceof ObjectSchema){
+									objectSchema = child;
+								}
+
+								if (objectSchema.getProperties() != null)
+								{
+									try
+									{
+										Method flattenProperties = inlineModelResolver.getClass().getDeclaredMethod("flattenProperties", OpenAPI.class, Map.class, String.class);
+										flattenProperties.setAccessible(true);
+										flattenProperties.invoke(inlineModelResolver, openAPI, objectSchema.getProperties(), schemaName);
+									}
+									catch (Exception e)
+									{
+										inlineModelResolver.flattenProperties(objectSchema.getProperties(), schemaName);
+									}
+								}
+							});
+						}
 					}
 				}
+			}
+			catch (Exception e)
+			{
+				LOG.debug("Cannot use InlineModelResolver:", e);
 			}
 		}
 
@@ -941,7 +969,7 @@ class PostProcessHelper
 							.orElseThrow(() -> new IllegalStateException(msg));
 
 					CodegenProperty discriminatorVarCloned = discriminatorVar.clone();
-					discriminatorVarCloned.hasMore = false;
+					setHasMore(discriminatorVarCloned, false);
 
 					rootModel.getVars().add(discriminatorVarCloned);
 					rootModel.getRequiredVars().add(discriminatorVarCloned);
@@ -1015,7 +1043,7 @@ class PostProcessHelper
 		List<CodegenProperty> clonedVars = new ArrayList<>();
 		vars.forEach(codegenProperty -> {
 			CodegenProperty cloned = codegenProperty.clone();
-			cloned.hasMore = vars.indexOf(codegenProperty) != vars.size() - 1;
+			setHasMore(cloned, vars.indexOf(codegenProperty) != vars.size() - 1);
 			clonedVars.add(cloned);
 		});
 		return clonedVars;
@@ -1108,6 +1136,18 @@ class PostProcessHelper
 			return Lists.newArrayList(allDefinitions.get(ModelUtils.getSimpleRef(schema.get$ref())));
 		}
 		return Lists.newArrayList();
+	}
+
+	private void setHasMore(final CodegenProperty cloned, final boolean hasMore)
+	{
+		try
+		{
+			cloned.hasMore = hasMore;
+		}
+		catch (NoSuchFieldError e)
+		{
+			LOG.debug("The CodegenProperty doesn't have hasMore field", e);
+		}
 	}
 
 	public class TypeAdapter

@@ -85,14 +85,24 @@
 	</build>
 	<dependencies>
 		<dependency>
-			<groupId>org.openapitools</groupId>
-			<artifactId>openapi-generator</artifactId>
-			<version>${openapi-generator-version}</version>
-			<scope>provided</scope>
+			<groupId>com.influxdb</groupId>
+			<artifactId>openapi-generator-core</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.openapitools</groupId>
+					<artifactId>openapi-generator</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.jetbrains</groupId>
 			<artifactId>annotations</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.openapitools</groupId>
+			<artifactId>openapi-generator</artifactId>
+			<version>${openapi-generator-version}</version>
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 </project>

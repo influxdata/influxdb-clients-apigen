@@ -30,7 +30,7 @@
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
-	<artifactId>openapi-generator-core</artifactId>
+	<artifactId>openapi-generator-3-version</artifactId>
 	<packaging>jar</packaging>
 
 	<properties>
@@ -85,18 +85,18 @@
 	</build>
 	<dependencies>
 		<dependency>
-			<groupId>org.openapitools</groupId>
-			<artifactId>openapi-generator</artifactId>
-			<version>${openapi-generator-version}</version>
-			<scope>provided</scope>
+			<groupId>com.influxdb</groupId>
+			<artifactId>openapi-generator-core</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.jetbrains</groupId>
 			<artifactId>annotations</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.yaml</groupId>
-			<artifactId>snakeyaml</artifactId>
+			<groupId>org.openapitools</groupId>
+			<artifactId>openapi-generator</artifactId>
+			<version>${openapi-generator-version}</version>
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 </project>

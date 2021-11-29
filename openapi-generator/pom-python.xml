@@ -41,7 +41,7 @@
                 <dependencies>
                     <dependency>
                         <groupId>com.influxdb</groupId>
-                        <artifactId>openapi-generator-core</artifactId>
+                        <artifactId>openapi-generator-3-version</artifactId>
                         <version>1.0.0</version>
                     </dependency>
                 </dependencies>
