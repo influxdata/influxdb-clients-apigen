@@ -18,8 +18,7 @@ hs_err_pid*
 .idea
 .m2
 build
-openapi-generator/target
-/openapi-generator/target/
+**/target/*
 .DS_Store
 oss.yml
 invocable-scripts.yml
