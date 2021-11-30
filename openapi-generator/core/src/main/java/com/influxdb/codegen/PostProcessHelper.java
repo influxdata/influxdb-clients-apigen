@@ -3,6 +3,7 @@ package com.influxdb.codegen;
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -278,14 +279,15 @@ class PostProcessHelper
 						List<Schema> allOf = ((ComposedSchema) schema).getAllOf();
 						if (allOf != null)
 						{
-							allOf.forEach(child -> {
-
+							for (Schema child : allOf)
+							{
 								Schema objectSchema = null;
 								if (child.get$ref() != null)
 								{
 									objectSchema = openAPI.getComponents().getSchemas().get(ModelUtils.getSimpleRef(child.get$ref()));
 								}
-								else if (child instanceof ObjectSchema){
+								else if (child instanceof ObjectSchema)
+								{
 									objectSchema = child;
 								}
 
@@ -299,10 +301,12 @@ class PostProcessHelper
 									}
 									catch (Exception e)
 									{
-										inlineModelResolver.flattenProperties(objectSchema.getProperties(), schemaName);
+										Method flattenProperties = inlineModelResolver.getClass().getDeclaredMethod("flattenProperties", Map.class, String.class);
+										flattenProperties.setAccessible(true);
+										flattenProperties.invoke(inlineModelResolver, objectSchema.getProperties(), schemaName);
 									}
 								}
-							});
+							}
 						}
 					}
 				}
@@ -592,9 +596,16 @@ class PostProcessHelper
 		// Fix structure of AST
 		//
 		{
+			CodegenModel node = getModel((HashMap) allModels.get("Node"));
+			setFieldValue(node, "oneOf", null);
+			setFieldValue(node, "vars", new ArrayList<CodegenProperty>());
 			CodegenModel propertyKey = getModel((HashMap) allModels.get("PropertyKey"));
+			setFieldValue(propertyKey, "oneOf", null);
+			setFieldValue(propertyKey, "vars", new ArrayList<CodegenProperty>());
 			CodegenModel identifier = getModel((HashMap) allModels.get("Identifier"));
 			CodegenModel expression = getModel((HashMap) allModels.get("Expression"));
+			setFieldValue(expression, "oneOf", null);
+			setFieldValue(expression, "vars", new ArrayList<CodegenProperty>());
 			CodegenModel stringLiteral = getModel((HashMap) allModels.get("StringLiteral"));
 
 			identifier.setParentModel(propertyKey);
@@ -608,6 +619,10 @@ class PostProcessHelper
 			stringLiteral.setParentModel(propertyKey);
 			stringLiteral.setParent(propertyKey.getName());
 			stringLiteral.setParentSchema(propertyKey.getName());
+
+			expression.setParentModel(node);
+			expression.setParent(node.getName());
+			expression.setParentSchema(node.getName());
 		}
 
 		fixInheritance("Check", Arrays.asList("Deadman", "Custom", "Threshold"), allModels);
@@ -1140,13 +1155,21 @@ class PostProcessHelper
 
 	private void setHasMore(final CodegenProperty cloned, final boolean hasMore)
 	{
+
+		setFieldValue(cloned, "hasMore", hasMore);
+	}
+
+	private void setFieldValue(final Object object, final String fieldName, final Object fieldValue)
+	{
 		try
 		{
-			cloned.hasMore = hasMore;
+			Field declaredField = object.getClass().getDeclaredField(fieldName);
+			declaredField.setAccessible(true);
+			declaredField.set(object, fieldValue);
 		}
-		catch (NoSuchFieldError e)
+		catch (Exception e)
 		{
-			LOG.debug("The CodegenProperty doesn't have hasMore field", e);
+			LOG.debug(String.format("Cannot set '%s' of '%s' to '%s'", fieldValue, object, fieldValue));
 		}
 	}
 

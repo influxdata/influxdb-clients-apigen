@@ -72,7 +72,8 @@ public class InfluxCSharpV2Generator extends CSharpNetCoreClientCodegen implemen
 				"Configuration.cs", "ApiException.cs", "IApiAccessor.cs", "ApiClient.cs",
 				"IReadableConfiguration.cs", "GlobalConfiguration.cs", "FileParameter.cs",
 				"IAsynchronousClient.cs", "ISynchronousClient.cs", "AbstractOpenAPISchema.cs",
-				"Multimap.cs", "RequestOptions.cs", "ClientUtils.cs", "WebRequestPathBuilder.cs");
+				"Multimap.cs", "RequestOptions.cs", "ClientUtils.cs", "WebRequestPathBuilder.cs",
+				"RetryConfiguration.cs");
 
 		//
 		// We want to use only the JSON.java
