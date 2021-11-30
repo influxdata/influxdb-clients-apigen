@@ -109,6 +109,19 @@ public class InfluxCSharpV2Generator extends CSharpNetCoreClientCodegen implemen
 	}
 
 	@Override
+	public Map<String, Object> postProcessOperationsWithModels(final Map<String, Object> objs, final List<Object> allModels)
+	{
+		super.postProcessOperationsWithModels(objs, allModels);
+		// add custom import for Authorization - there is collision with "System.Net.Authorization"
+		if (((Map) objs.get("operations")).get("classname").equals("AuthorizationsService"))
+		{
+			objs.put("customImports", Arrays.asList("using Authorization = InfluxDB.Client.Api.Domain.Authorization;"));
+		}
+
+		return objs;
+	}
+
+	@Override
 	public String toModelName(final String name)
 	{
 		final String modelName = super.toModelName(name);

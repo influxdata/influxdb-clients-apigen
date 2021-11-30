@@ -38,6 +38,7 @@
                     <modelPackage>Domain</modelPackage>
                     <apiPackage>Service</apiPackage>
 					<library>httpclient</library>
+					<templateDirectory>templates/csharp</templateDirectory>
                 </configuration>
                 <dependencies>
                     <dependency>
