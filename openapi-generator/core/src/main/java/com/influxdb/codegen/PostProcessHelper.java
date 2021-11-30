@@ -615,6 +615,9 @@ class PostProcessHelper
 			stringLiteral.setParentModel(propertyKey);
 			stringLiteral.setParent(propertyKey.getName());
 			stringLiteral.setParentSchema(propertyKey.getName());
+
+			CodegenModel optionStatement = getModel((HashMap) allModels.get("OptionStatement"));
+			setPropertyType(optionStatement, "Assignment", "Object");
 		}
 
 		fixInheritance("Check", Arrays.asList("Deadman", "Custom", "Threshold"), allModels);
@@ -1143,6 +1146,22 @@ class PostProcessHelper
 			return Lists.newArrayList(allDefinitions.get(ModelUtils.getSimpleRef(schema.get$ref())));
 		}
 		return Lists.newArrayList();
+	}
+
+	private void setPropertyType(final CodegenModel model, final String varName, final String varType)
+	{
+		for (List<CodegenProperty> properties : Arrays.asList(model.allVars, model.vars, model.readWriteVars))
+		{
+			for (CodegenProperty property : properties)
+			{
+				if (varName.equals(property.name))
+				{
+					property.setDatatype(varType);
+					property.setComplexType(varType);
+					property.setDatatypeWithEnum(varType);
+				}
+			}
+		}
 	}
 
 	private void setHasMore(final CodegenProperty cloned, final boolean hasMore)
