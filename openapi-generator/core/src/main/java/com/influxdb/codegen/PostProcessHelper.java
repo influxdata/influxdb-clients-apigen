@@ -560,7 +560,8 @@ class PostProcessHelper
 			//
 			// Set correct inheritance. The "interfaces" extends base object.
 			//
-			if (!model.hasVars && model.interfaceModels != null)
+			Set<String> oneOf = (Set<String>) getFieldValue(model, "oneOf");
+			if ((!model.hasVars || (oneOf != null && !oneOf.isEmpty())) && model.interfaceModels != null)
 			{
 				if (model.getName().matches("(.*)Check(.*)|(.*)Threshold(.*)|(.*)Notification(.*)"))
 				{
@@ -578,6 +579,8 @@ class PostProcessHelper
 
 				model.interfaces.clear();
 				model.interfaceModels.clear();
+				setFieldValue(model, "oneOf", null);
+				setFieldValue(model, "vars", new ArrayList<CodegenProperty>());
 			}
 
 			//
@@ -596,16 +599,9 @@ class PostProcessHelper
 		// Fix structure of AST
 		//
 		{
-			CodegenModel node = getModel((HashMap) allModels.get("Node"));
-			setFieldValue(node, "oneOf", null);
-			setFieldValue(node, "vars", new ArrayList<CodegenProperty>());
 			CodegenModel propertyKey = getModel((HashMap) allModels.get("PropertyKey"));
-			setFieldValue(propertyKey, "oneOf", null);
-			setFieldValue(propertyKey, "vars", new ArrayList<CodegenProperty>());
 			CodegenModel identifier = getModel((HashMap) allModels.get("Identifier"));
 			CodegenModel expression = getModel((HashMap) allModels.get("Expression"));
-			setFieldValue(expression, "oneOf", null);
-			setFieldValue(expression, "vars", new ArrayList<CodegenProperty>());
 			CodegenModel stringLiteral = getModel((HashMap) allModels.get("StringLiteral"));
 
 			identifier.setParentModel(propertyKey);
@@ -619,10 +615,6 @@ class PostProcessHelper
 			stringLiteral.setParentModel(propertyKey);
 			stringLiteral.setParent(propertyKey.getName());
 			stringLiteral.setParentSchema(propertyKey.getName());
-
-			expression.setParentModel(node);
-			expression.setParent(node.getName());
-			expression.setParentSchema(node.getName());
 		}
 
 		fixInheritance("Check", Arrays.asList("Deadman", "Custom", "Threshold"), allModels);
@@ -1171,6 +1163,22 @@ class PostProcessHelper
 		{
 			LOG.debug(String.format("Cannot set '%s' of '%s' to '%s'", fieldValue, object, fieldValue));
 		}
+	}
+
+	private Object getFieldValue(final Object object, final String fieldName)
+	{
+		try
+		{
+			Field declaredField = object.getClass().getDeclaredField(fieldName);
+			declaredField.setAccessible(true);
+			return declaredField.get(object);
+		}
+		catch (Exception e)
+		{
+			LOG.debug(String.format("Cannot get '%s' of '%s'", fieldName, object));
+		}
+
+		return null;
 	}
 
 	public class TypeAdapter
