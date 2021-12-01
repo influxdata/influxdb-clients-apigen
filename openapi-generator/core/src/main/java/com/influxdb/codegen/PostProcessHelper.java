@@ -37,7 +37,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.intellij.lang.annotations.Language;
-import org.jetbrains.annotations.NotNull;
 import org.openapitools.codegen.CodegenConfig;
 import org.openapitools.codegen.CodegenDiscriminator;
 import org.openapitools.codegen.CodegenModel;
@@ -226,10 +225,13 @@ class PostProcessHelper
 				Schema mediaType = post.getRequestBody().getContent().get("application/json").getSchema();
 				// '#/components/schemas/PostCheck'
 				String $ref = mediaType.get$ref();
-				// '#/components/schemas/Post'
-				mediaType.set$ref($ref.replace("Post", ""));
-				// 'PostCheck'
-				dropSchemas(StringUtils.substringAfterLast($ref, "/"));
+				if (ModelUtils.getSimpleRef($ref).startsWith("Post"))
+				{
+					// '#/components/schemas/Post'
+					mediaType.set$ref($ref.replace("Post", ""));
+					// 'PostCheck'
+					dropSchemas(StringUtils.substringAfterLast($ref, "/"));
+				}
 			});
 		}
 
@@ -840,6 +842,20 @@ class PostProcessHelper
 				.map(mapping -> getModel((HashMap) allModels.get(mapping + name)))
 				.collect(Collectors.toList());
 
+		discriminatorModel.interfaces.clear();
+		discriminatorModel.interfaceModels.clear();
+
+		setFieldValue(discriminatorModel, "oneOf", null);
+		setFieldValue(discriminatorModel, "vars", new ArrayList<CodegenProperty>());
+
+		CodegenDiscriminator cgDiscriminator = discriminatorModel.getDiscriminator();
+		Set<CodegenDiscriminator.MappedModel> collect = discriminatorModel
+				.getDiscriminator()
+				.getMappedModels()
+				.stream().filter(it -> cgDiscriminator.getMapping().containsKey(it.getMappingName()))
+				.collect(Collectors.toSet());
+		cgDiscriminator.setMappedModels(collect);
+
 		for (CodegenModel modelInDiscriminator : modelsInDiscriminator)
 		{
 			CodegenModel discriminatorModelBase = modelInDiscriminator;
@@ -858,6 +874,8 @@ class PostProcessHelper
 
 				setToParentVars(modelInDiscriminator, objects);
 				setExtensionParentVars(modelInDiscriminator, objects);
+
+				modelInDiscriminator.vars.clear();
 			}
 
 			if (generator.compileTimeInheritance())
@@ -875,6 +893,12 @@ class PostProcessHelper
 				discriminatorModelBase = schema;
 				discriminatorModelBase.hasRequired = true;
 				discriminatorModelBase.hasOnlyReadOnly = false;
+
+				if (modelInDiscriminator.name.endsWith("NotificationEndpoint"))
+				{
+					modelInDiscriminator.vars.removeIf(it -> it.name.equalsIgnoreCase("status"));
+					modelInDiscriminator.parentVars.removeIf(it -> it.name.equalsIgnoreCase("type"));
+				}
 			}
 
 			if (discriminatorModelBase != discriminatorModel)
@@ -908,7 +932,7 @@ class PostProcessHelper
 				CodegenProperty discriminatorVar = modelInDiscriminator
 						.getRequiredVars()
 						.stream()
-						.filter(it -> it.getBaseName().equals(discriminatorPropertyName))
+						.filter(it -> it.getBaseName().equalsIgnoreCase(discriminatorPropertyName))
 						.findFirst()
 						.orElseThrow(() -> new IllegalStateException(msg));
 
@@ -923,7 +947,7 @@ class PostProcessHelper
 						.getVendorExtensions()
 						.get("x-parent-vars");
 				xParentVars.stream()
-						.filter(it -> it.getBaseName().equals(discriminatorPropertyName))
+						.filter(it -> it.getBaseName().equalsIgnoreCase(discriminatorPropertyName))
 						.findFirst()
 						.map(new Function<CodegenProperty, Void>()
 						{
@@ -987,6 +1011,14 @@ class PostProcessHelper
 					rootModel.getAllVars().add(discriminatorVarCloned);
 				}
 			}
+			else
+			{
+				rootModel.setReadWriteVars(rootModel.parentVars);
+				for (List<CodegenProperty> properties : modelVars(rootModel))
+				{
+					properties.removeIf(it -> it.getBaseName().equalsIgnoreCase(discriminatorPropertyName));
+				}
+			}
 		}
 
 		// remove discriminator property from inherited Discriminator
@@ -997,12 +1029,11 @@ class PostProcessHelper
 				return;
 			}
 
-			discriminatorModel
-					.getRequiredVars()
-					.removeIf(codegenProperty -> codegenProperty.getBaseName().equals(discriminatorPropertyName));
-			discriminatorModel
-					.getAllVars()
-					.removeIf(codegenProperty -> codegenProperty.getBaseName().equals(discriminatorPropertyName));
+			for (List<CodegenProperty> properties : modelVars(discriminatorModel))
+			{
+				 properties.removeIf(it -> it.getBaseName().equals(discriminatorPropertyName));
+			}
+
 			discriminatorModel.setDiscriminator(null);
 		}
 	}
@@ -1047,7 +1078,7 @@ class PostProcessHelper
 		model.vendorExtensions.put("x-parent-classFilename", parentModel.getClassFilename());
 	}
 
-	@NotNull
+	@Nonnull
 	private List<CodegenProperty> cloneVars(final List<CodegenProperty> vars)
 	{
 		List<CodegenProperty> clonedVars = new ArrayList<>();
@@ -1198,6 +1229,15 @@ class PostProcessHelper
 		}
 
 		return null;
+	}
+
+	@Nonnull
+	private List<List<CodegenProperty>> modelVars(final CodegenModel rootModel)
+	{
+		return Arrays.asList(
+				rootModel.getReadWriteVars(),
+				rootModel.getRequiredVars(),
+				rootModel.getAllVars());
 	}
 
 	public class TypeAdapter
