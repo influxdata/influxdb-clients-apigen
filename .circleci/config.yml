@@ -245,7 +245,7 @@ jobs:
           command: |
             cd ./build/influxdb-client-php
             composer install -n --prefer-dist
-            composer require guzzlehttp/guzzle:6.5.3
+            composer require guzzlehttp/guzzle:6.5.3 guzzlehttp/psr7:1.8.3
       - run:
           name: Run tests
           command: |
