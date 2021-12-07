@@ -1,6 +1,8 @@
 package com.influxdb.codegen;
 
 import javax.annotation.Nonnull;
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,18 +14,23 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.servers.Server;
+import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.languages.CSharpNetCoreClientCodegen;
 import org.openapitools.codegen.utils.ModelUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Jakub Bednar (29/11/2021 8:49)
  */
 public class InfluxCSharpV2Generator extends CSharpNetCoreClientCodegen implements InfluxGenerator
 {
+	private static final Logger LOG = LoggerFactory.getLogger(InfluxCSharpV2Generator.class);
+
 	private PostProcessHelper postProcessHelper;
 
 	@Nonnull
@@ -176,6 +183,45 @@ public class InfluxCSharpV2Generator extends CSharpNetCoreClientCodegen implemen
 		}
 
 		return modelName;
+	}
+
+	@Override
+	public void postProcess()
+	{
+		super.postProcess();
+
+		File srcFolder = new File(outputFolder() + File.separator + "InfluxDB.Client.Api/Client");
+		File dstFolder = new File(outputFolder() + File.separator + "../Client.Core/Api");
+
+		try
+		{
+			// delete existing sources
+			FileUtils.deleteDirectory(dstFolder);
+			// move generated
+			LOG.info("move " + srcFolder + " -> " + dstFolder);
+			FileUtils.moveDirectory(srcFolder, dstFolder);
+			FileUtils.moveFileToDirectory(new File(outputFolder + File.separator + "InfluxDB.Client.Api/Domain/AbstractOpenAPISchema.cs"), dstFolder, false);
+			
+			// change namespace
+			List<File> folders = Arrays.asList(dstFolder,
+					new File(outputFolder() + File.separator + "InfluxDB.Client.Api/Service"),
+					new File(outputFolder() + File.separator + "InfluxDB.Client.Api/Domain"));
+			for (File folder : folders)
+			{
+				LOG.info("replace namespace for files in folder " + folder);
+				for (File file : FileUtils.listFiles(folder, new String[]{"cs"}, false))
+				{
+					String fileString = FileUtils.readFileToString(file, "UTF-8");
+					String finalString = fileString.replaceAll("InfluxDB.Client.Api.Client", "InfluxDB.Client.Core.Api");
+					FileUtils.writeStringToFile(file, finalString, "UTF-8");
+				}
+
+			}
+		}
+		catch (IOException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	@NotNull
