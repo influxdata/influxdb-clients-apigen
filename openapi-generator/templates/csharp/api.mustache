@@ -38,6 +38,17 @@ namespace {{packageName}}.{{apiPackage}}
         /// <summary>
         /// {{summary}}
         /// </summary>
+		/// <remarks>
+        /// {{notes}}
+        /// </remarks>
+		/// <exception cref="{{packageName}}.Client.ApiException">Thrown when fails to make API call</exception>
+		{{#allParams}}/// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
+		{{/allParams}}/// <returns>RequestOptions</returns>
+		RequestOptions {{operationId}}WithRequestOptions({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = default({{{dataType}}}){{/optionalMethodArgument}}{{/required}}{{^-last}}, {{/-last}}{{/allParams}});
+
+		/// <summary>
+        /// {{summary}}
+        /// </summary>
         /// <remarks>
         /// {{notes}}
         /// </remarks>
@@ -237,6 +248,28 @@ namespace {{packageName}}.{{apiPackage}}
         {{/allParams}}/// <returns>ApiResponse of {{#returnType}}{{returnType}}{{/returnType}}{{^returnType}}Object(void){{/returnType}}</returns>
         public {{packageName}}.Client.ApiResponse<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Object{{/returnType}}> {{operationId}}WithHttpInfo({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = default({{{dataType}}}){{/optionalMethodArgument}}{{/required}}{{^-last}}, {{/-last}}{{/allParams}})
         {
+			var localVarRequestOptions = {{operationId}}WithRequestOptions({{#allParams}}{{paramName}}{{^-last}}, {{/-last}}{{/allParams}});
+
+            // make the HTTP request
+            var localVarResponse = this.Client.{{#lambda.titlecase}}{{#lambda.lowercase}}{{httpMethod}}{{/lambda.lowercase}}{{/lambda.titlecase}}<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Object{{/returnType}}>("{{{path}}}", localVarRequestOptions, this.Configuration);
+
+            if (this.ExceptionFactory != null)
+            {
+                Exception _exception = this.ExceptionFactory("{{operationId}}", localVarResponse);
+                if (_exception != null) throw _exception;
+            }
+
+            return localVarResponse;
+        }
+
+        /// <summary>
+        /// {{summary}} {{notes}}
+        /// </summary>
+        /// <exception cref="{{packageName}}.Client.ApiException">Thrown when fails to make API call</exception>
+        {{#allParams}}/// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
+        {{/allParams}}/// <returns>RequestOptions</returns>
+        public RequestOptions {{operationId}}WithRequestOptions({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = default({{{dataType}}}){{/optionalMethodArgument}}{{/required}}{{^-last}}, {{/-last}}{{/allParams}})
+        {
             {{#allParams}}
             {{#required}}
             {{^vendorExtensions.x-csharp-value-type}}
@@ -412,16 +445,7 @@ namespace {{packageName}}.{{apiPackage}}
             {{/isHttpSignature}}
             {{/authMethods}}
 
-            // make the HTTP request
-            var localVarResponse = this.Client.{{#lambda.titlecase}}{{#lambda.lowercase}}{{httpMethod}}{{/lambda.lowercase}}{{/lambda.titlecase}}<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Object{{/returnType}}>("{{{path}}}", localVarRequestOptions, this.Configuration);
-
-            if (this.ExceptionFactory != null)
-            {
-                Exception _exception = this.ExceptionFactory("{{operationId}}", localVarResponse);
-                if (_exception != null) throw _exception;
-            }
-
-            return localVarResponse;
+            return localVarRequestOptions;
         }
 
         {{#supportsAsync}}
