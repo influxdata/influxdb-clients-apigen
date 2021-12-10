@@ -120,7 +120,8 @@ public class InfluxCSharpV2Generator extends CSharpNetCoreClientCodegen implemen
 	{
 		super.postProcessOperationsWithModels(objs, allModels);
 		// add custom import for Authorization - there is collision with "System.Net.Authorization"
-		if (((Map) objs.get("operations")).get("classname").equals("AuthorizationsService"))
+		Object serviceClassName = ((Map) objs.get("operations")).get("classname");
+		if (Arrays.asList("AuthorizationsService", "LegacyAuthorizationsService").contains(serviceClassName))
 		{
 			objs.put("customImports", Arrays.asList("using Authorization = InfluxDB.Client.Api.Domain.Authorization;"));
 		}
