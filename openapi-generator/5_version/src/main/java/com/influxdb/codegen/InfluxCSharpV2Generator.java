@@ -71,6 +71,7 @@ public class InfluxCSharpV2Generator extends CSharpNetCoreClientCodegen implemen
 	@Override
 	public void processOpts()
 	{
+		additionalProperties.put(SUPPORTS_RETRY, false);
 
 		super.processOpts();
 
@@ -79,8 +80,7 @@ public class InfluxCSharpV2Generator extends CSharpNetCoreClientCodegen implemen
 				"Configuration.cs", "ApiException.cs", "IApiAccessor.cs", "ApiClient.cs",
 				"IReadableConfiguration.cs", "GlobalConfiguration.cs", "FileParameter.cs",
 				"IAsynchronousClient.cs", "ISynchronousClient.cs", "AbstractOpenAPISchema.cs",
-				"Multimap.cs", "RequestOptions.cs", "ClientUtils.cs", "WebRequestPathBuilder.cs",
-				"RetryConfiguration.cs");
+				"Multimap.cs", "RequestOptions.cs", "ClientUtils.cs", "WebRequestPathBuilder.cs");
 
 		//
 		// We want to use only the JSON.java
