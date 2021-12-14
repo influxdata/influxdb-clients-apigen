@@ -1,0 +1,84 @@
+diff --git a/client/src/main/java/com/influxdb/client/TelegrafsApi.java b/client/src/main/java/com/influxdb/client/TelegrafsApi.java
+index fd886a48e0..445a9219d6 100644
+--- a/client/src/main/java/com/influxdb/client/TelegrafsApi.java
++++ b/client/src/main/java/com/influxdb/client/TelegrafsApi.java
+@@ -36,6 +36,7 @@ import com.influxdb.client.domain.ResourceMember;
+ import com.influxdb.client.domain.ResourceOwner;
+ import com.influxdb.client.domain.Telegraf;
+ import com.influxdb.client.domain.TelegrafPlugin;
++import com.influxdb.client.domain.TelegrafPluginRequest;
+ import com.influxdb.client.domain.TelegrafRequest;
+ import com.influxdb.client.domain.TelegrafRequestMetadata;
+ import com.influxdb.client.domain.User;
+@@ -180,6 +181,15 @@ public interface TelegrafsApi {
+     @Nonnull
+     Telegraf createTelegraf(@Nonnull final TelegrafRequest telegrafRequest);
+ 
++    /**
++     * Create a telegraf config.
++     *
++     * @param telegrafPluginRequest Telegraf Configuration to create
++     * @return Telegraf config created
++     */
++    @Nonnull
++    Telegraf createTelegraf(@Nonnull final TelegrafPluginRequest telegrafPluginRequest);
++
+     /**
+      * Created default Telegraf Agent configuration.
+      *
+diff --git a/client/src/main/java/com/influxdb/client/internal/TelegrafsApiImpl.java b/client/src/main/java/com/influxdb/client/internal/TelegrafsApiImpl.java
+index e171a4a62e..0239eb8969 100644
+--- a/client/src/main/java/com/influxdb/client/internal/TelegrafsApiImpl.java
++++ b/client/src/main/java/com/influxdb/client/internal/TelegrafsApiImpl.java
+@@ -46,6 +46,7 @@ import com.influxdb.client.domain.ResourceOwner;
+ import com.influxdb.client.domain.ResourceOwners;
+ import com.influxdb.client.domain.Telegraf;
+ import com.influxdb.client.domain.TelegrafPlugin;
++import com.influxdb.client.domain.TelegrafPluginRequest;
+ import com.influxdb.client.domain.TelegrafRequest;
+ import com.influxdb.client.domain.TelegrafRequestMetadata;
+ import com.influxdb.client.domain.Telegrafs;
+@@ -188,7 +189,16 @@ final class TelegrafsApiImpl extends AbstractRestClient implements TelegrafsApi
+ 
+         Arguments.checkNotNull(telegrafRequest, "telegrafRequest");
+ 
+-        Call<Telegraf> call = service.postTelegrafs(telegrafRequest, null);
++        return createTelegraf(toPluginRequest(telegrafRequest));
++    }
++
++    @Nonnull
++    @Override
++    public Telegraf createTelegraf(@Nonnull final TelegrafPluginRequest telegrafPluginRequest) {
++
++        Arguments.checkNotNull(telegrafPluginRequest, "telegrafPluginRequest");
++
++        Call<Telegraf> call = service.postTelegrafs(telegrafPluginRequest, null);
+ 
+         return execute(call);
+     }
+@@ -227,8 +237,7 @@ final class TelegrafsApiImpl extends AbstractRestClient implements TelegrafsApi
+ 
+         Arguments.checkNotNull(telegrafRequest, "TelegrafRequest");
+ 
+-
+-        Call<Telegraf> telegrafConfigCall = service.putTelegrafsID(telegrafID, telegrafRequest, null);
++        Call<Telegraf> telegrafConfigCall = service.putTelegrafsID(telegrafID, toPluginRequest(telegrafRequest), null);
+ 
+         return execute(telegrafConfigCall);
+     }
+@@ -578,4 +587,14 @@ final class TelegrafsApiImpl extends AbstractRestClient implements TelegrafsApi
+             config.append("\n");
+         }
+     }
++
++    @Nonnull
++    private TelegrafPluginRequest toPluginRequest(final @Nonnull TelegrafRequest telegrafRequest) {
++        return new TelegrafPluginRequest()
++                .name(telegrafRequest.getName())
++                .description(telegrafRequest.getDescription())
++                .metadata(telegrafRequest.getMetadata())
++                .config(telegrafRequest.getConfig())
++                .orgID(telegrafRequest.getOrgID());
++    }
+ }
+\ No newline at end of file
