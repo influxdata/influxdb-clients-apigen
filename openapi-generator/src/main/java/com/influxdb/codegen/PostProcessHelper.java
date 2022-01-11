@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -30,7 +29,6 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.HeaderParameter;
 import io.swagger.v3.oas.models.parameters.Parameter;
-import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import org.apache.commons.io.FileUtils;
@@ -152,6 +150,10 @@ class PostProcessHelper
 		{
 			Schema newPropertySchema = new ObjectSchema().additionalProperties(new ObjectSchema());
 			changePropertySchema("config", "TelegrafPlugin", newPropertySchema);
+
+			Schema schema = ((ArraySchema) openAPI.getComponents().getSchemas().get("TelegrafPluginRequest").getProperties().get("plugins"))
+					.getItems();
+			changePropertySchema("config", schema, newPropertySchema);
 		}
 
 		//
@@ -748,8 +750,13 @@ class PostProcessHelper
 	{
 		ObjectSchema objectSchema = (ObjectSchema) openAPI.getComponents().getSchemas().get(schema);
 
-		Map<String, Schema> properties = objectSchema.getProperties();
-		properties.put(property, propertySchema.description(properties.get(property).getDescription()));
+		changePropertySchema(property, objectSchema, propertySchema);
+	}
+
+	private void changePropertySchema(final String property, final Schema oldSchema, final Schema newSchema)
+	{
+		Map<String, Schema> properties = oldSchema.getProperties();
+		properties.put(property, newSchema.description(properties.get(property).getDescription()));
 	}
 
 	private void dropSchemas(@Language("RegExp") final String regexp)
