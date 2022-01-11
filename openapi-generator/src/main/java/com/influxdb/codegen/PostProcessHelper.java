@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -158,6 +159,25 @@ class PostProcessHelper
 		//
 		{
 			openAPI.getComponents().getSchemas().put("Flags", new ObjectSchema().additionalProperties(new Schema()));
+		}
+
+		//
+		// Use String schema for /metrics response
+		//
+		{
+			PathItem pathItem = openAPI.getPaths().get("/metrics");
+			pathItem.readOperations()
+					.forEach(operation -> {
+						operation
+								.getResponses()
+								.forEach((responseKey, response) -> {
+									response
+											.getContent()
+											.forEach((mediaTypeKey, mediaType) -> {
+												mediaType.setSchema(new StringSchema());
+											});
+								});
+					});
 		}
 
 		//

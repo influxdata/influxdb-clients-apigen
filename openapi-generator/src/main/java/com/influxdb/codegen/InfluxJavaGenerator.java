@@ -207,6 +207,7 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 
 			List<String> returnTypes = operation.produces.stream()
 					.filter(produce -> operation.produces.indexOf(produce) != 0)
+					.filter(produce -> !operation.baseName.equals("Metrics"))
 					.map(produce -> {
 
 						PathItem path = globalOpenAPI.getPaths().get(StringUtils.substringAfter(operation.path, "/v2"));
