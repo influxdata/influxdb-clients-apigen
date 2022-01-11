@@ -1,68 +1,8 @@
-diff --git a/client-test/src/main/java/com/influxdb/test/AbstractTest.java b/client-test/src/main/java/com/influxdb/test/AbstractTest.java
-index 237824cb36..3acd474f26 100644
---- a/client-test/src/main/java/com/influxdb/test/AbstractTest.java
-+++ b/client-test/src/main/java/com/influxdb/test/AbstractTest.java
-@@ -21,6 +21,15 @@
-  */
- package com.influxdb.test;
- 
-+import okhttp3.MediaType;
-+import okhttp3.OkHttpClient;
-+import okhttp3.Request;
-+import okhttp3.RequestBody;
-+import okhttp3.Response;
-+import org.assertj.core.api.Assertions;
-+import org.junit.jupiter.api.BeforeEach;
-+
-+import javax.annotation.Nonnull;
- import java.lang.reflect.Field;
- import java.util.ArrayList;
- import java.util.List;
-@@ -29,15 +38,6 @@ import java.util.concurrent.TimeUnit;
- import java.util.logging.Logger;
- import java.util.stream.Collectors;
- import java.util.stream.IntStream;
--import javax.annotation.Nonnull;
--
--import okhttp3.MediaType;
--import okhttp3.OkHttpClient;
--import okhttp3.Request;
--import okhttp3.RequestBody;
--import okhttp3.Response;
--import org.assertj.core.api.Assertions;
--import org.junit.jupiter.api.BeforeEach;
- 
- /**
-  * @author Jakub Bednar (bednar@github) (03/10/2018 14:54)
-@@ -88,7 +88,7 @@ public abstract class AbstractTest {
- 
-     @Nonnull
-     protected String getInfluxDb2Port() {
--        return System.getenv().getOrDefault("INFLUXDB_2_PORT_API", "9999");
-+        return System.getenv().getOrDefault("INFLUXDB_2_PORT_API", "8086");
-     }
- 
-     @Nonnull
 diff --git a/client/src/main/java/com/influxdb/client/TelegrafsApi.java b/client/src/main/java/com/influxdb/client/TelegrafsApi.java
-index fd886a48e0..32c5c27f54 100644
+index fd886a48e0..7b351797e0 100644
 --- a/client/src/main/java/com/influxdb/client/TelegrafsApi.java
 +++ b/client/src/main/java/com/influxdb/client/TelegrafsApi.java
-@@ -21,14 +21,6 @@
-  */
- package com.influxdb.client;
- 
--import java.util.Collection;
--import java.util.HashMap;
--import java.util.List;
--import java.util.Map;
--import javax.annotation.Nonnull;
--import javax.annotation.Nullable;
--import javax.annotation.concurrent.ThreadSafe;
--
- import com.influxdb.client.domain.Label;
- import com.influxdb.client.domain.LabelResponse;
- import com.influxdb.client.domain.Organization;
-@@ -36,10 +28,19 @@ import com.influxdb.client.domain.ResourceMember;
+@@ -36,6 +36,7 @@ import com.influxdb.client.domain.ResourceMember;
  import com.influxdb.client.domain.ResourceOwner;
  import com.influxdb.client.domain.Telegraf;
  import com.influxdb.client.domain.TelegrafPlugin;
@@ -70,18 +10,24 @@ index fd886a48e0..32c5c27f54 100644
  import com.influxdb.client.domain.TelegrafRequest;
  import com.influxdb.client.domain.TelegrafRequestMetadata;
  import com.influxdb.client.domain.User;
- 
-+import javax.annotation.Nonnull;
-+import javax.annotation.Nullable;
-+import javax.annotation.concurrent.ThreadSafe;
-+import java.util.Collection;
-+import java.util.HashMap;
-+import java.util.List;
-+import java.util.Map;
-+
- /**
-  * The client of the InfluxDB 2.0 that implement Telegrafs HTTP API endpoint.
-  * <br>
+@@ -48,7 +49,7 @@ import com.influxdb.client.domain.User;
+  * The following example shows how to create a Telegraf configuration with an output plugin and an input cpu plugin.
+  * <pre>
+  * TelegrafPlugin output = new TelegrafPlugin()
+- *                 .type(TelegrafPlugin.TypeEnum.OUTPUTS)
++ *                 .type(TelegrafPlugin.TypeEnum.OUTPUT)
+  *                 .name("influxdb_v2")
+  *                 .description("my instance")
+  *                 .putConfigItem("organization", "my-org")
+@@ -57,7 +58,7 @@ import com.influxdb.client.domain.User;
+  *                 .putConfigItem("urls", Collections.singletonList("http://127.0.0.1:9999"));
+  *
+  * TelegrafPlugin cpu = new TelegrafPlugin()
+- *                 .type(TelegrafPlugin.TypeEnum.INPUTS)
++ *                 .type(TelegrafPlugin.TypeEnum.INPUT)
+  *                 .name("cpu")
+  *                 .putConfigItem("percpu", true)
+  *                 .putConfigItem("totalcpu", true)
 @@ -174,11 +175,11 @@ public interface TelegrafsApi {
      /**
       * Create a telegraf config.
@@ -96,48 +42,29 @@ index fd886a48e0..32c5c27f54 100644
  
      /**
       * Created default Telegraf Agent configuration.
-@@ -219,6 +220,17 @@ public interface TelegrafsApi {
+@@ -217,7 +218,7 @@ public interface TelegrafsApi {
+      */
+     @Nonnull
      Telegraf updateTelegraf(@Nonnull final String telegrafID,
-                             @Nonnull final TelegrafRequest telegrafRequest);
- 
-+    /**
-+     * Update a telegraf config.
-+     *
-+     * @param telegrafID      ID of telegraf config
-+     * @param telegrafRequest telegraf config update to apply
-+     * @return An updated telegraf
-+     */
-+    @Nonnull
-+    Telegraf updateTelegraf(@Nonnull final String telegrafID,
+-                            @Nonnull final TelegrafRequest telegrafRequest);
 +                            @Nonnull final TelegrafPluginRequest telegrafRequest);
-+
+ 
      /**
       * Delete a telegraf config.
-      *
 diff --git a/client/src/main/java/com/influxdb/client/internal/TelegrafsApiImpl.java b/client/src/main/java/com/influxdb/client/internal/TelegrafsApiImpl.java
-index e171a4a62e..3e1ad2cd21 100644
+index e171a4a62e..8be5ad55c0 100644
 --- a/client/src/main/java/com/influxdb/client/internal/TelegrafsApiImpl.java
 +++ b/client/src/main/java/com/influxdb/client/internal/TelegrafsApiImpl.java
-@@ -21,18 +21,6 @@
-  */
- package com.influxdb.client.internal;
- 
--import java.util.Collection;
--import java.util.HashMap;
--import java.util.LinkedHashMap;
--import java.util.List;
--import java.util.Map;
--import java.util.logging.Level;
--import java.util.logging.Logger;
+@@ -28,8 +28,6 @@ import java.util.List;
+ import java.util.Map;
+ import java.util.logging.Level;
+ import java.util.logging.Logger;
 -import java.util.stream.Collectors;
 -import java.util.stream.Stream;
--import javax.annotation.Nonnull;
--import javax.annotation.Nullable;
--
- import com.influxdb.client.TelegrafsApi;
- import com.influxdb.client.domain.AddResourceMemberRequestBody;
- import com.influxdb.client.domain.Label;
-@@ -46,6 +34,8 @@ import com.influxdb.client.domain.ResourceOwner;
+ import javax.annotation.Nonnull;
+ import javax.annotation.Nullable;
+ 
+@@ -46,6 +44,8 @@ import com.influxdb.client.domain.ResourceOwner;
  import com.influxdb.client.domain.ResourceOwners;
  import com.influxdb.client.domain.Telegraf;
  import com.influxdb.client.domain.TelegrafPlugin;
@@ -146,35 +73,14 @@ index e171a4a62e..3e1ad2cd21 100644
  import com.influxdb.client.domain.TelegrafRequest;
  import com.influxdb.client.domain.TelegrafRequestMetadata;
  import com.influxdb.client.domain.Telegrafs;
-@@ -53,9 +43,19 @@ import com.influxdb.client.domain.User;
- import com.influxdb.client.service.TelegrafsService;
- import com.influxdb.internal.AbstractRestClient;
- import com.influxdb.utils.Arguments;
--
-+import org.jetbrains.annotations.NotNull;
- import retrofit2.Call;
- 
-+import javax.annotation.Nonnull;
-+import javax.annotation.Nullable;
-+import java.util.Collection;
-+import java.util.HashMap;
-+import java.util.LinkedHashMap;
-+import java.util.List;
-+import java.util.Map;
-+import java.util.logging.Level;
-+import java.util.logging.Logger;
-+
- /**
-  * @author Jakub Bednar (bednar@github) (28/02/2019 10:25)
-  */
 @@ -123,25 +123,21 @@ final class TelegrafsApiImpl extends AbstractRestClient implements TelegrafsApi
  
          // append agent configuration
          config.append("[agent]").append("\n");
 -        agentConfiguration.forEach((key, value) -> appendConfiguration(config, key, value));
--
--        config.append("\n");
  
+-        config.append("\n");
+-
 -        // append plugins configuration
 -        for (TelegrafPlugin plugin : plugins) {
 -            if (plugin.getDescription() != null) {
@@ -235,16 +141,14 @@ index e171a4a62e..3e1ad2cd21 100644
  
          return updateTelegraf(telegraf.getId(), telegrafRequest);
      }
-@@ -227,8 +223,16 @@ final class TelegrafsApiImpl extends AbstractRestClient implements TelegrafsApi
- 
-         Arguments.checkNotNull(telegrafRequest, "TelegrafRequest");
- 
-+        return updateTelegraf(telegrafID, toPluginRequest(telegrafRequest));
-+    }
-+
-+    @NotNull
-+    @Override
-+    public Telegraf updateTelegraf(@Nonnull final String telegrafID,
+@@ -223,12 +219,10 @@ final class TelegrafsApiImpl extends AbstractRestClient implements TelegrafsApi
+     @Nonnull
+     @Override
+     public Telegraf updateTelegraf(@Nonnull final String telegrafID,
+-                                   @Nonnull final TelegrafRequest telegrafRequest) {
+-
+-        Arguments.checkNotNull(telegrafRequest, "TelegrafRequest");
+-
 +                                   @Nonnull final TelegrafPluginRequest telegrafPluginRequest) {
 +        Arguments.checkNotNull(telegrafPluginRequest, "TelegrafPluginRequest");
  
@@ -253,7 +157,7 @@ index e171a4a62e..3e1ad2cd21 100644
  
          return execute(telegrafConfigCall);
      }
-@@ -272,7 +276,7 @@ final class TelegrafsApiImpl extends AbstractRestClient implements TelegrafsApi
+@@ -272,7 +266,7 @@ final class TelegrafsApiImpl extends AbstractRestClient implements TelegrafsApi
          Arguments.checkNotNull(telegraf, "TelegrafConfig");
  
  
@@ -262,7 +166,7 @@ index e171a4a62e..3e1ad2cd21 100644
  
          Telegraf created = createTelegraf(telegrafRequest);
          created.setName(clonedName);
-@@ -538,11 +542,11 @@ final class TelegrafsApiImpl extends AbstractRestClient implements TelegrafsApi
+@@ -538,11 +532,11 @@ final class TelegrafsApiImpl extends AbstractRestClient implements TelegrafsApi
      }
  
      @Nonnull
@@ -276,7 +180,7 @@ index e171a4a62e..3e1ad2cd21 100644
          telegrafRequest.setName(telegraf.getName());
          telegrafRequest.setDescription(telegraf.getDescription());
          telegrafRequest.setConfig(telegraf.getConfig());
-@@ -552,30 +556,13 @@ final class TelegrafsApiImpl extends AbstractRestClient implements TelegrafsApi
+@@ -552,30 +546,13 @@ final class TelegrafsApiImpl extends AbstractRestClient implements TelegrafsApi
          return telegrafRequest;
      }
  
@@ -317,57 +221,18 @@ index e171a4a62e..3e1ad2cd21 100644
  }
 \ No newline at end of file
 diff --git a/client/src/test/java/com/influxdb/client/ITTelegrafsApi.java b/client/src/test/java/com/influxdb/client/ITTelegrafsApi.java
-index 24239705fe..273cdf3b20 100644
+index 24239705fe..3870cbdbe6 100644
 --- a/client/src/test/java/com/influxdb/client/ITTelegrafsApi.java
 +++ b/client/src/test/java/com/influxdb/client/ITTelegrafsApi.java
-@@ -21,22 +21,16 @@
-  */
- package com.influxdb.client;
- 
--import java.util.Arrays;
--import java.util.Collections;
--import java.util.HashMap;
--import java.util.List;
--import java.util.Map;
--import javax.annotation.Nonnull;
--
-+import com.influxdb.LogLevel;
- import com.influxdb.client.domain.Label;
- import com.influxdb.client.domain.Organization;
- import com.influxdb.client.domain.ResourceMember;
+@@ -34,6 +34,7 @@ import com.influxdb.client.domain.ResourceMember;
  import com.influxdb.client.domain.ResourceOwner;
  import com.influxdb.client.domain.Telegraf;
  import com.influxdb.client.domain.TelegrafPlugin;
 +import com.influxdb.client.domain.TelegrafPluginRequest;
  import com.influxdb.client.domain.User;
  import com.influxdb.exceptions.NotFoundException;
--
- import com.moandjiezana.toml.Toml;
- import org.assertj.core.api.Assertions;
- import org.junit.jupiter.api.BeforeEach;
-@@ -45,6 +39,13 @@ import org.junit.jupiter.api.Test;
- import org.junit.platform.runner.JUnitPlatform;
- import org.junit.runner.RunWith;
  
-+import javax.annotation.Nonnull;
-+import java.util.Arrays;
-+import java.util.Collections;
-+import java.util.HashMap;
-+import java.util.List;
-+import java.util.Map;
-+
- /**
-  * @author Jakub Bednar (bednar@github) (28/02/2019 10:31)
-  */
-@@ -68,6 +69,7 @@ class ITTelegrafsApi extends AbstractITClientTest {
-     @Test
-     void createTelegrafConfig() {
- 
-+        influxDBClient.setLogLevel(LogLevel.BODY);
-         String name = generateName("TelegrafConfig");
- 
-         TelegrafPlugin output = newOutputPlugin();
-@@ -113,28 +115,6 @@ class ITTelegrafsApi extends AbstractITClientTest {
+@@ -113,28 +114,6 @@ class ITTelegrafsApi extends AbstractITClientTest {
          Assertions.assertThat(inputs.get(0)).hasEntrySatisfying("percpu", value -> Assertions.assertThat(value).isEqualTo(true));
      }
  
@@ -396,7 +261,7 @@ index 24239705fe..273cdf3b20 100644
      @Test
      void pluginWithoutConfiguration() {
  
-@@ -155,10 +135,15 @@ class ITTelegrafsApi extends AbstractITClientTest {
+@@ -155,10 +134,15 @@ class ITTelegrafsApi extends AbstractITClientTest {
          telegrafConfig.setDescription("updated");
          telegrafConfig.setConfig("my-updated-config");
  
@@ -414,7 +279,13 @@ index 24239705fe..273cdf3b20 100644
      }
  
      @Test
-@@ -426,8 +411,7 @@ class ITTelegrafsApi extends AbstractITClientTest {
+@@ -421,25 +405,24 @@ class ITTelegrafsApi extends AbstractITClientTest {
+     @Nonnull
+     private TelegrafPlugin newCpuPlugin() {
+         return new TelegrafPlugin()
+-                .type(TelegrafPlugin.TypeEnum.INPUTS)
++                .type(TelegrafPlugin.TypeEnum.INPUT)
+                 .name("cpu")
                  .putConfigItem("percpu", true)
                  .putConfigItem("totalcpu", true)
                  .putConfigItem("collect_cpu_time", false)
@@ -424,3 +295,17 @@ index 24239705fe..273cdf3b20 100644
      }
  
      @Nonnull
+     private TelegrafPlugin newKernelPlugin() {
+-        return new TelegrafPlugin().type(TelegrafPlugin.TypeEnum.INPUTS).name("kernel");
++        return new TelegrafPlugin().type(TelegrafPlugin.TypeEnum.INPUT).name("kernel");
+     }
+ 
+     @Nonnull
+     private TelegrafPlugin newOutputPlugin() {
+ 
+         return new TelegrafPlugin()
+-                .type(TelegrafPlugin.TypeEnum.OUTPUTS)
++                .type(TelegrafPlugin.TypeEnum.OUTPUT)
+                 .name("influxdb_v2")
+                 .description("my instance")
+                 .putConfigItem("organization", "my-org")
