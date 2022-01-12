@@ -1,16 +1,17 @@
 diff --git a/client/src/main/java/com/influxdb/client/TelegrafsApi.java b/client/src/main/java/com/influxdb/client/TelegrafsApi.java
-index fd886a48e0..7b351797e0 100644
+index fd886a48e0..836d2d5721 100644
 --- a/client/src/main/java/com/influxdb/client/TelegrafsApi.java
 +++ b/client/src/main/java/com/influxdb/client/TelegrafsApi.java
-@@ -36,6 +36,7 @@ import com.influxdb.client.domain.ResourceMember;
+@@ -36,7 +36,7 @@ import com.influxdb.client.domain.ResourceMember;
  import com.influxdb.client.domain.ResourceOwner;
  import com.influxdb.client.domain.Telegraf;
  import com.influxdb.client.domain.TelegrafPlugin;
+-import com.influxdb.client.domain.TelegrafRequest;
 +import com.influxdb.client.domain.TelegrafPluginRequest;
- import com.influxdb.client.domain.TelegrafRequest;
  import com.influxdb.client.domain.TelegrafRequestMetadata;
  import com.influxdb.client.domain.User;
-@@ -48,7 +49,7 @@ import com.influxdb.client.domain.User;
+ 
+@@ -48,7 +48,7 @@ import com.influxdb.client.domain.User;
   * The following example shows how to create a Telegraf configuration with an output plugin and an input cpu plugin.
   * <pre>
   * TelegrafPlugin output = new TelegrafPlugin()
@@ -19,7 +20,7 @@ index fd886a48e0..7b351797e0 100644
   *                 .name("influxdb_v2")
   *                 .description("my instance")
   *                 .putConfigItem("organization", "my-org")
-@@ -57,7 +58,7 @@ import com.influxdb.client.domain.User;
+@@ -57,7 +57,7 @@ import com.influxdb.client.domain.User;
   *                 .putConfigItem("urls", Collections.singletonList("http://127.0.0.1:9999"));
   *
   * TelegrafPlugin cpu = new TelegrafPlugin()
@@ -28,7 +29,7 @@ index fd886a48e0..7b351797e0 100644
   *                 .name("cpu")
   *                 .putConfigItem("percpu", true)
   *                 .putConfigItem("totalcpu", true)
-@@ -174,11 +175,11 @@ public interface TelegrafsApi {
+@@ -174,11 +174,11 @@ public interface TelegrafsApi {
      /**
       * Create a telegraf config.
       *
@@ -42,7 +43,7 @@ index fd886a48e0..7b351797e0 100644
  
      /**
       * Created default Telegraf Agent configuration.
-@@ -217,7 +218,7 @@ public interface TelegrafsApi {
+@@ -217,7 +217,7 @@ public interface TelegrafsApi {
       */
      @Nonnull
      Telegraf updateTelegraf(@Nonnull final String telegrafID,
