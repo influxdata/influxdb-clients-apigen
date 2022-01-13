@@ -49,7 +49,8 @@ namespace {{packageName}}.Client
                 {
                     OverrideSpecifiedNames = false
                 }
-            }
+            },
+            DateTimeZoneHandling = DateTimeZoneHandling.Utc
         };
 
         public CustomJsonCodec(IReadableConfiguration configuration)
@@ -187,7 +188,8 @@ namespace {{packageName}}.Client
                 {
                     OverrideSpecifiedNames = false
                 }
-            }
+            },
+            DateTimeZoneHandling = DateTimeZoneHandling.Utc
         };
 
         /// <summary>
