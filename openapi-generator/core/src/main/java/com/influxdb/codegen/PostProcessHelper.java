@@ -796,7 +796,9 @@ class PostProcessHelper
 	private void changePropertySchema(final String property, final Schema oldSchema, final Schema newSchema)
 	{
 		Map<String, Schema> properties = oldSchema.getProperties();
-		properties.put(property, newSchema.description(properties.get(property).getDescription()));
+		if (properties != null) {
+			properties.put(property, newSchema.description(properties.get(property).getDescription()));
+		}
 	}
 
 	private void dropSchemas(@Language("RegExp") final String regexp)
