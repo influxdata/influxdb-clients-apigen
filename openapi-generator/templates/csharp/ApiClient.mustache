@@ -361,6 +361,11 @@ namespace {{packageName}}.Client
             {
                 request.Content = new FormUrlEncodedContent(options.FormParameters);
             }
+            else if (contentType == "text/plain")
+            {
+                request.Content = new StringContent(Convert.ToString(options.Data, CultureInfo.InvariantCulture),
+                	new UTF8Encoding(), "text/plain");
+            }
             else
             {
                 if (options.Data != null)
