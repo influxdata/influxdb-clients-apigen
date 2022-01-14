@@ -1,4 +1,3 @@
 com.influxdb.codegen.InfluxJavaGenerator
-com.influxdb.codegen.InfluxCSharpGenerator
 com.influxdb.codegen.InfluxPythonGenerator
 com.influxdb.codegen.InfluxPhpGenerator
