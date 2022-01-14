@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -967,10 +968,11 @@ class PostProcessHelper
 			// Set Inheritance for var which are in parentVars.
 			//
 			if (generator.compileTimeInheritance())   {
-				for (CodegenProperty var : modelInDiscriminator.vars)
-				{
-					var.isInherited = modelInDiscriminator.parentVars.stream().anyMatch(it -> it.name.equals(var.name));
-				}
+				modelInDiscriminator.vars.removeIf(var -> {
+					boolean isFromParent = modelInDiscriminator.parentVars.stream().anyMatch(it -> it.name.equals(var.name));
+					boolean isNotVarToBeField = modelInDiscriminator.readWriteVars.stream().noneMatch(it -> it.name.equals(var.name));
+					return isFromParent || isNotVarToBeField;
+				});
 			}
 
 			modelInDiscriminator.vendorExtensions.put("x-discriminator-value", discriminatorKey);
