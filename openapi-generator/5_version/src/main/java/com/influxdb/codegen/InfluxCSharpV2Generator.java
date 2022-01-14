@@ -8,11 +8,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.servers.Server;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
@@ -47,6 +51,14 @@ public class InfluxCSharpV2Generator extends CSharpNetCoreClientCodegen implemen
 
 		postProcessHelper = new PostProcessHelper(this);
 		postProcessHelper.postProcessOpenAPI();
+
+		// Body of Write is set to String
+		openAPI.getPaths().get("/write")
+				.readOperations()
+				.forEach(operation -> {
+					MediaType mediaType = operation.getRequestBody().getContent().get("text/plain");
+					mediaType.setSchema(new StringSchema().type("string"));
+				});
 	}
 
 	@Override
