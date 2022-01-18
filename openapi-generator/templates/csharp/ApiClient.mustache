@@ -517,23 +517,25 @@ namespace {{packageName}}.Client
             else
             {
 {{/supportsRetry}}
-				try
-				{
-					response = await _httpClient.SendAsync(req, finalToken).ConfigureAwait(false);
-            	}
-				catch (Exception e)
-				{
-					throw new HttpException(e.Message, 0, e);
-				}
+            try
+            {
+            	response = await _httpClient.SendAsync(req, finalToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+            	throw new HttpException(e.Message, 0, e);
+            }
 {{#supportsRetry}}
             }
 {{/supportsRetry}}
+
+            InterceptResponse(req, response);
 
             if (!response.IsSuccessStatusCode)
             {
                 return await ToApiResponse<T>(response, default(T), req.RequestUri).ConfigureAwait(false);
             }
-			
+
             object responseData;
 
             // if the response type is oneOf/anyOf, call FromJSON to deserialize the data
@@ -549,8 +551,6 @@ namespace {{packageName}}.Client
             {
                 responseData = await deserializer.Deserialize<T>(response).ConfigureAwait(false);
             }
-
-            InterceptResponse(req, response);
 
             return await ToApiResponse<T>(response, responseData, req.RequestUri).ConfigureAwait(false);
         }
