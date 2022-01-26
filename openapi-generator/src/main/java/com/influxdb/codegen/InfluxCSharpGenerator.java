@@ -215,6 +215,12 @@ public class InfluxCSharpGenerator extends CSharpClientCodegen implements Influx
 		return false;
 	}
 
+	@Override
+	public boolean supportsStacksTemplates()
+	{
+		return false;
+	}
+
 	@NotNull
 	@Override
 	public Collection<String> getTypeAdapterImports()

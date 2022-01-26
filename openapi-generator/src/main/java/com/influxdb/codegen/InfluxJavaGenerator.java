@@ -445,6 +445,12 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 		return false;
 	}
 
+	@Override
+	public boolean supportsStacksTemplates()
+	{
+		return false;
+	}
+
 	@NotNull
 	@Override
 	public Collection<String> getTypeAdapterImports()

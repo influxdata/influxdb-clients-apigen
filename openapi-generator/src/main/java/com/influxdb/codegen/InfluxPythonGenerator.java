@@ -128,6 +128,22 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
     }
 
 	@Override
+	public String toVarName(String name)
+	{
+		name = name.replaceAll("orgIDs", "orgIds");
+
+		return super.toVarName(name);
+	}
+
+	@Override
+	public String toModelFilename(String name)
+	{
+		name = name.replaceAll("orgIDs", "orgIds");
+
+		return super.toModelFilename(name);
+	}
+
+	@Override
 	public void processOpenAPI(OpenAPI openAPI) {
 
 		List<String> serviceInits = Lists.newArrayList(
@@ -179,6 +195,12 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
 
 	@Override
 	public boolean usesOwnAuthorizationSchema()
+	{
+		return true;
+	}
+
+	@Override
+	public boolean supportsStacksTemplates()
 	{
 		return true;
 	}
