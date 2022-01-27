@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -187,17 +188,64 @@ class PostProcessHelper
 		//
 		{
 			dropSchemas("Geo(.*)View(.*)");
+			dropSchemas("LatLon(.*)");
 			((ComposedSchema) openAPI.getComponents().getSchemas().get("ViewProperties"))
 					.getOneOf()
 					.removeIf(schema -> schema.get$ref().endsWith("GeoViewProperties"));
 		}
 
 		//
-		// Drop supports for Templates, Stack
+		// Templates, Stack API
 		//
 		{
-			dropSchemas("Stack(.*)|Template(.*)|LatLon(.*)");
-			dropPaths("/stacks(.*)|/templates(.*)");
+			// Fix naming for ViewLink and ViewsLink schema
+			{
+				Schema viewSchema = openAPI.getComponents().getSchemas().get("View");
+				Schema links = (Schema) viewSchema.getProperties().get("links");
+				((Schema) links.getProperties().get("self")).setTitle("ViewLinks");
+
+				Schema viewsSchema = openAPI.getComponents().getSchemas().get("Views");
+				Schema viewsSchemaLinks = (Schema) viewsSchema.getProperties().get("links");
+				((Schema) viewsSchemaLinks.getProperties().get("self")).setTitle("ViewLinks");
+			}
+
+			// Fix naming for 'new' and 'old' property of TemplateSummary.diff
+			{
+				Schema schema = openAPI.getComponents().getSchemas().get("TemplateSummary");
+				ObjectSchema diff = (ObjectSchema) schema.getProperties().get("diff");
+				for (Map.Entry<String, Schema> entry : diff.getProperties().entrySet())
+				{
+					String path = entry.getKey();
+					ArraySchema pathSchema = (ArraySchema) entry.getValue();
+					Schema newSchema = (Schema) pathSchema.getItems().getProperties().get("new");
+					if (newSchema != null && newSchema.get$ref() == null)
+					{
+						newSchema.setTitle("TemplateSummary_Diff_" + path + "_new_old");
+					}
+				}
+			}
+
+			// Fix schema name for UpdateStack.additionalResources
+			{
+				Schema stackPatch = openAPI.getPaths()
+						.get("/stacks/{stack_id}")
+						.getPatch()
+						.getRequestBody()
+						.getContent()
+						.get("application/json")
+						.getSchema();
+				Schema additionalResources = ((ArraySchema) stackPatch.getProperties().get("additionalResources"))
+						.getItems();
+				additionalResources.setTitle("PatchStackRequest_additionalResources");
+			}
+
+			//
+			// Drop if not supported
+			//
+			if (!generator.supportsStacksTemplates())
+			{
+				dropPaths("/stacks(.*)|/templates(.*)");
+			}
 		}
 
 		//
@@ -304,6 +352,24 @@ class PostProcessHelper
 				parameter.setDescription(description.trim());
 			}
 		});
+		for (PathItem path : openAPI.getPaths().values())
+		{
+			for (Operation operation : path.readOperations())
+			{
+				List<Parameter> parameters = operation.getParameters();
+				if (parameters != null)
+				{
+					for (Parameter parameter : parameters)
+					{
+						String description = parameter.getDescription();
+						if (description != null)
+						{
+							parameter.setDescription(description.trim());
+						}
+					}
+				}
+			}
+		}
 	}
 
 	public void postProcessModel(final CodegenModel model, final Schema modelSchema, final Map<String, Schema> allDefinitions)

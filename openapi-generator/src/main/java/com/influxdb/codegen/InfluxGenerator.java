@@ -26,6 +26,8 @@ public interface InfluxGenerator
 
 	boolean usesOwnAuthorizationSchema();
 
+	boolean supportsStacksTemplates();
+
 	@Nonnull
 	Collection<String> getTypeAdapterImports();
 }
