@@ -1183,15 +1183,6 @@ class PostProcessHelper
 		return Lists.newArrayList();
 	}
 
-	private <T> T mapValue(String[] paths, Object object){
-		if (paths.length == 0) {
-			//noinspection unchecked
-			return (T) object;
-		}
-
-		return mapValue(Arrays.copyOfRange(paths, 1, paths.length), ((Map) object).get(paths[0]));
-	}
-
 	public class TypeAdapter
 	{
 

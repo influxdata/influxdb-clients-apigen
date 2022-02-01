@@ -20,7 +20,7 @@ public class AppendCloudDefinitions
 	{
 		if (args.length != 2)
 		{
-			LOG.info("You have to specified to path. First to oss.yml and second to cloud.yml.");
+			LOG.info("You have to specify paths for 'oss.yml' and 'cloud.yml'.");
 			return;
 		}
 
@@ -30,18 +30,19 @@ public class AppendCloudDefinitions
 
 		Map<String, Object> oss = yaml.load(new FileInputStream(args[0]));
 		Map<String, Object> cloud = yaml.load(new FileInputStream(args[1]));
-		List<String> ossPermissionTypes = mapValue(
-				new String[]{"components", "schemas", "Resource", "properties", "type", "enum"},
-				oss);
-		List<String> cloudPermissionTypes = mapValue(
-				new String[]{"components", "schemas", "Resource", "properties", "type", "enum"},
-				cloud);
 
-		for (String cloudPermissionType : cloudPermissionTypes)
+		// Add Permission Types from Cloud
 		{
-			if (!ossPermissionTypes.contains(cloudPermissionType))
+			String[] permissionTypePath = {"components", "schemas", "Resource", "properties", "type", "enum"};
+			List<String> ossPermissionTypes = mapValue(permissionTypePath, oss);
+			List<String> cloudPermissionTypes = mapValue(permissionTypePath, cloud);
+
+			for (String cloudPermissionType : cloudPermissionTypes)
 			{
-				ossPermissionTypes.add(cloudPermissionType);
+				if (!ossPermissionTypes.contains(cloudPermissionType))
+				{
+					ossPermissionTypes.add(cloudPermissionType);
+				}
 			}
 		}
 
