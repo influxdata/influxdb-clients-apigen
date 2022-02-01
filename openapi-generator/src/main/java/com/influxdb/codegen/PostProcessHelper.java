@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -88,6 +87,7 @@ class PostProcessHelper
 	{
 		//
 		// Drop available security schemas if the client uses own definition of Auth header
+		//
 		if (generator.usesOwnAuthorizationSchema())
 		{
 			List<SecurityRequirement> security = openAPI.getSecurity();
@@ -152,9 +152,13 @@ class PostProcessHelper
 			Schema newPropertySchema = new ObjectSchema().additionalProperties(new ObjectSchema());
 			changePropertySchema("config", "TelegrafPlugin", newPropertySchema);
 
-			Schema schema = ((ArraySchema) openAPI.getComponents().getSchemas().get("TelegrafPluginRequest").getProperties().get("plugins"))
-					.getItems();
-			changePropertySchema("config", schema, newPropertySchema);
+			Schema telegrafPluginRequest = openAPI.getComponents().getSchemas().get("TelegrafPluginRequest");
+			if (telegrafPluginRequest != null)
+			{
+				Schema schema = ((ArraySchema) telegrafPluginRequest.getProperties().get("plugins"))
+						.getItems();
+				changePropertySchema("config", schema, newPropertySchema);
+			}
 		}
 
 		//
@@ -169,18 +173,21 @@ class PostProcessHelper
 		//
 		{
 			PathItem pathItem = openAPI.getPaths().get("/metrics");
-			pathItem.readOperations()
-					.forEach(operation -> {
-						operation
-								.getResponses()
-								.forEach((responseKey, response) -> {
-									response
-											.getContent()
-											.forEach((mediaTypeKey, mediaType) -> {
-												mediaType.setSchema(new StringSchema());
-											});
-								});
-					});
+			if (pathItem != null)
+			{
+				pathItem.readOperations()
+						.forEach(operation -> {
+							operation
+									.getResponses()
+									.forEach((responseKey, response) -> {
+										response
+												.getContent()
+												.forEach((mediaTypeKey, mediaType) -> {
+													mediaType.setSchema(new StringSchema());
+												});
+									});
+						});
+			}
 		}
 
 		//

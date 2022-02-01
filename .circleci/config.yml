@@ -13,7 +13,7 @@ commands:
   build-generator:
     steps:
       - run: mvn -f openapi-generator/pom.xml clean install -DskipTests
-  download-oss-swagger:
+  download-swagger:
     parameters:
       contracts:
         type: string
@@ -60,12 +60,18 @@ jobs:
             - &cache-key maven-cache_v1-{{ checksum "openapi-generator/pom.xml" }}
             - maven-cache_v1
       - build-generator
-      - download-oss-swagger:
+      - download-swagger:
           contracts: << parameters.contracts >>
+      - download-swagger:
+          contracts: "cloud.yml"
       - run:
           name: "Merge Contracts: << parameters.contracts >>"
           command: |
             mvn -f openapi-generator/pom.xml exec:java -Dexec.mainClass="com.influxdb.MergeContracts" -Dexec.args="<< parameters.contracts >>"
+      - run:
+          name: "Append Cloud definitions"
+          command: |
+            mvn -f openapi-generator/pom.xml exec:java -Dexec.mainClass="com.influxdb.AppendCloudDefinitions" -Dexec.args="oss.yml cloud.yml"
       - clone-client:
           client: influxdb-client-<< parameters.client >>
           branch: << parameters.branch >>
