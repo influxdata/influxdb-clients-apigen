@@ -2,8 +2,6 @@ package com.influxdb.codegen;
 
 import javax.annotation.Nonnull;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,7 +45,6 @@ import org.openapitools.codegen.InlineModelResolver;
 import org.openapitools.codegen.utils.ModelUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
 
 /**
  * @author Jakub Bednar (18/05/2021 13:20)
@@ -97,39 +94,6 @@ class PostProcessHelper
 			if (security != null)
 			{
 				security.clear();
-			}
-		}
-
-		//
-		// Add Permission Resource types from Cloud
-		//
-		{
-			Map<String, Object> destination;
-			// load cloud.yml
-			try
-			{
-				String cloudPath = System.getProperty("swaggerLocation").replace("oss.yml", "cloud.yml");
-				Yaml yaml = new Yaml();
-				destination = yaml.load(new FileInputStream(cloudPath));
-			}
-			catch (FileNotFoundException e)
-			{
-				throw new RuntimeException(e);
-			}
-
-			// find permission types
-			List<String> cloudPermissionTypes = mapValue(
-					new String[]{"components", "schemas", "Resource", "properties", "type", "enum"},
-					destination);
-
-			StringSchema typeSchema = (StringSchema) openAPI.getComponents().getSchemas().get("Resource").getProperties().get("type");
-			// append cloud permission types
-			for (String cloudPermissionType : cloudPermissionTypes)
-			{
-				if (!typeSchema.getEnum().contains(cloudPermissionType))
-				{
-					typeSchema.addEnumItem(cloudPermissionType);
-				}
 			}
 		}
 
