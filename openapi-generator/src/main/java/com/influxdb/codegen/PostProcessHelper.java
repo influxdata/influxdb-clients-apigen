@@ -2,6 +2,8 @@ package com.influxdb.codegen;
 
 import javax.annotation.Nonnull;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -46,6 +47,7 @@ import org.openapitools.codegen.InlineModelResolver;
 import org.openapitools.codegen.utils.ModelUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  * @author Jakub Bednar (18/05/2021 13:20)
@@ -88,12 +90,46 @@ class PostProcessHelper
 	{
 		//
 		// Drop available security schemas if the client uses own definition of Auth header
+		//
 		if (generator.usesOwnAuthorizationSchema())
 		{
 			List<SecurityRequirement> security = openAPI.getSecurity();
 			if (security != null)
 			{
 				security.clear();
+			}
+		}
+
+		//
+		// Add Permission Resource types from Cloud
+		//
+		{
+			Map<String, Object> destination;
+			// load cloud.yml
+			try
+			{
+				String cloudPath = System.getProperty("swaggerLocation").replace("oss.yml", "cloud.yml");
+				Yaml yaml = new Yaml();
+				destination = yaml.load(new FileInputStream(cloudPath));
+			}
+			catch (FileNotFoundException e)
+			{
+				throw new RuntimeException(e);
+			}
+
+			// find permission types
+			List<String> cloudPermissionTypes = mapValue(
+					new String[]{"components", "schemas", "Resource", "properties", "type", "enum"},
+					destination);
+
+			StringSchema typeSchema = (StringSchema) openAPI.getComponents().getSchemas().get("Resource").getProperties().get("type");
+			// append cloud permission types
+			for (String cloudPermissionType : cloudPermissionTypes)
+			{
+				if (!typeSchema.getEnum().contains(cloudPermissionType))
+				{
+					typeSchema.addEnumItem(cloudPermissionType);
+				}
 			}
 		}
 
@@ -152,9 +188,13 @@ class PostProcessHelper
 			Schema newPropertySchema = new ObjectSchema().additionalProperties(new ObjectSchema());
 			changePropertySchema("config", "TelegrafPlugin", newPropertySchema);
 
-			Schema schema = ((ArraySchema) openAPI.getComponents().getSchemas().get("TelegrafPluginRequest").getProperties().get("plugins"))
-					.getItems();
-			changePropertySchema("config", schema, newPropertySchema);
+			Schema telegrafPluginRequest = openAPI.getComponents().getSchemas().get("TelegrafPluginRequest");
+			if (telegrafPluginRequest != null)
+			{
+				Schema schema = ((ArraySchema) telegrafPluginRequest.getProperties().get("plugins"))
+						.getItems();
+				changePropertySchema("config", schema, newPropertySchema);
+			}
 		}
 
 		//
@@ -169,18 +209,21 @@ class PostProcessHelper
 		//
 		{
 			PathItem pathItem = openAPI.getPaths().get("/metrics");
-			pathItem.readOperations()
-					.forEach(operation -> {
-						operation
-								.getResponses()
-								.forEach((responseKey, response) -> {
-									response
-											.getContent()
-											.forEach((mediaTypeKey, mediaType) -> {
-												mediaType.setSchema(new StringSchema());
-											});
-								});
-					});
+			if (pathItem != null)
+			{
+				pathItem.readOperations()
+						.forEach(operation -> {
+							operation
+									.getResponses()
+									.forEach((responseKey, response) -> {
+										response
+												.getContent()
+												.forEach((mediaTypeKey, mediaType) -> {
+													mediaType.setSchema(new StringSchema());
+												});
+									});
+						});
+			}
 		}
 
 		//
@@ -1174,6 +1217,15 @@ class PostProcessHelper
 			return Lists.newArrayList(allDefinitions.get(ModelUtils.getSimpleRef(schema.get$ref())));
 		}
 		return Lists.newArrayList();
+	}
+
+	private <T> T mapValue(String[] paths, Object object){
+		if (paths.length == 0) {
+			//noinspection unchecked
+			return (T) object;
+		}
+
+		return mapValue(Arrays.copyOfRange(paths, 1, paths.length), ((Map) object).get(paths[0]));
 	}
 
 	public class TypeAdapter

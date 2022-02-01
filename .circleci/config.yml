@@ -13,7 +13,7 @@ commands:
   build-generator:
     steps:
       - run: mvn -f openapi-generator/pom.xml clean install -DskipTests
-  download-oss-swagger:
+  download-swagger:
     parameters:
       contracts:
         type: string
@@ -60,8 +60,10 @@ jobs:
             - &cache-key maven-cache_v1-{{ checksum "openapi-generator/pom.xml" }}
             - maven-cache_v1
       - build-generator
-      - download-oss-swagger:
+      - download-swagger:
           contracts: << parameters.contracts >>
+      - download-swagger:
+          contracts: "cloud.yml"
       - run:
           name: "Merge Contracts: << parameters.contracts >>"
           command: |
