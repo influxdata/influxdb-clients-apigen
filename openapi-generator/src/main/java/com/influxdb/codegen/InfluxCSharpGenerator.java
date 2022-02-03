@@ -60,6 +60,15 @@ public class InfluxCSharpGenerator extends CSharpClientCodegen implements Influx
 
 		postProcessHelper = new PostProcessHelper(this);
 		postProcessHelper.postProcessOpenAPI();
+
+		//
+		// Set duration magnitude as long
+		//
+		{
+			Schema duration = openAPI.getComponents().getSchemas().get("Duration");
+			Schema magnitude = (Schema) duration.getProperties().get("magnitude");
+			magnitude.setFormat("int64");
+		}
 	}
 
 	@Override
