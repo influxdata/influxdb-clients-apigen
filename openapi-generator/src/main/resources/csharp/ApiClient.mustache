@@ -12,7 +12,6 @@ using System.Web;
 {{/netStandard}}
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
@@ -125,14 +124,9 @@ namespace {{packageName}}.Client
             String path, {{^netStandard}}RestSharp.{{/netStandard}}Method method, List<KeyValuePair<String, String>> queryParams, Object postBody,
             Dictionary<String, String> headerParams, Dictionary<String, String> formParams,
             Dictionary<String, FileParameter> fileParams, Dictionary<String, String> pathParams,
-            String contentType, Func<HttpResponseMessage, RestResponse> advancedResponseWriter = null)
+            String contentType)
         {
-            var request = new RestRequest
-            {
-                Resource = path,
-                Method = method,
-                AdvancedResponseWriter = advancedResponseWriter
-            };
+            var request = new RestRequest(path, method);
             {{#netStandard}}
             // disable ResetSharp.Portable built-in serialization
             request.Serializer = null;
@@ -178,7 +172,7 @@ namespace {{packageName}}.Client
                 request.AddParameter(new Parameter { Value = postBody, Type = ParameterType.RequestBody, ContentType = contentType });
                 {{/netStandard}}
                 {{^netStandard}}
-                request.AddParameter(contentType, postBody, ParameterType.RequestBody);
+                request.AddParameter(new BodyParameter(contentType, postBody, contentType));
                 {{/netStandard}}
             }
 
