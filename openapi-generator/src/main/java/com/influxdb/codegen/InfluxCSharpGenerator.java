@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -16,6 +17,8 @@ import org.jetbrains.annotations.Nullable;
 import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.languages.CSharpClientCodegen;
+
+import static org.apache.commons.lang3.StringUtils.capitalize;
 
 public class InfluxCSharpGenerator extends CSharpClientCodegen implements InfluxGenerator
 {
@@ -86,6 +89,7 @@ public class InfluxCSharpGenerator extends CSharpClientCodegen implements Influx
 	{
 
 		CodegenOperation op = super.fromOperation(path, httpMethod, operation, definitions, openAPI);
+		op.httpMethod = capitalize(httpMethod.toLowerCase(Locale.ROOT));
 		postProcessHelper.postProcessOperation(path, operation, op, definitions);
 
 		return op;
