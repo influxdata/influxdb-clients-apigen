@@ -172,7 +172,7 @@ namespace {{packageName}}.Client
                 request.AddParameter(new Parameter { Value = postBody, Type = ParameterType.RequestBody, ContentType = contentType });
                 {{/netStandard}}
                 {{^netStandard}}
-                request.AddParameter(new BodyParameter(contentType, postBody, contentType));
+                request.AddParameter(new BodyParameter(contentType, postBody, contentType, postBody is byte[] ? DataFormat.Binary : DataFormat.None));
                 {{/netStandard}}
             }
 
