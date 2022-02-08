@@ -148,6 +148,16 @@ public class InfluxCSharpGenerator extends CSharpClientCodegen implements Influx
 			return "TaskType";
 		}
 
+		if ("PatchStackRequest1".equals(modelName))
+		{
+			return "PatchStackRequest";
+		}
+
+		if ("PostStackRequest1".equals(modelName))
+		{
+			return "PostStackRequest";
+		}
+
 		if ("RetentionRule".equals(modelName))
 		{
 			return "BucketRetentionRules";
@@ -225,13 +235,13 @@ public class InfluxCSharpGenerator extends CSharpClientCodegen implements Influx
 	@Override
 	public boolean usesOwnAuthorizationSchema()
 	{
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean supportsStacksTemplates()
 	{
-		return false;
+		return true;
 	}
 
 	@NotNull

@@ -202,22 +202,13 @@ namespace {{packageName}}.Client
                 path, method, queryParams, postBody, headerParams, formParams, fileParams,
                 pathParams, contentType);
 
-            // set timeout
-            {{#netStandard}}RestClient.Timeout = TimeSpan.FromMilliseconds(Configuration.Timeout);{{/netStandard}}
-            {{^netStandard}}
-            // RestClient.Timeout = Configuration.Timeout;
-            // RestClient.ReadWriteTimeout = Configuration.ReadWriteTimeout;
-            {{/netStandard}}
-            // set user agent
-            // RestClient.UserAgent = Configuration.UserAgent;
-
             InterceptRequest(request);
             {{#netStandard}}
             var response = RestClient.Execute(request).Result;
             {{/netStandard}}
             {{^netStandard}}
             {{^supportsUWP}}
-            var response = RestClient.ExecuteAsync(request).GetAwaiter().GetResult();
+            var response = RestClient.ExecuteAsync(request).ConfigureAwait(false).GetAwaiter().GetResult();
             {{/supportsUWP}}
             {{#supportsUWP}}
             // Using async method to perform sync call (uwp-only)
