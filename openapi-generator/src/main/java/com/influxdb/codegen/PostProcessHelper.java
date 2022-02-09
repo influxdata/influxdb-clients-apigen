@@ -680,6 +680,21 @@ class PostProcessHelper
 			CodegenModel model = getModel((HashMap) entry.getValue());
 			String modelName = model.getName();
 
+			//
+			// Fix enum vars
+			//
+			for (CodegenProperty allVar : model.getAllVars())
+			{
+				if (allVar.isEnum)
+				{
+					CodegenProperty codegenProperty = getCodegenProperty(model, allVar.baseName);
+					if (codegenProperty != null && !codegenProperty.isEnum)
+					{
+						codegenProperty.isEnum = allVar.isEnum;
+					}
+				}
+			}
+
 			if (modelName.matches("(.*)Check(.*)|(.*)Threshold(.*)|(.*)NotificationEndpoint(.*)|(.*)NotificationRule(.*)") && !"CheckViewProperties".equals(modelName))
 			{
 				continue;
