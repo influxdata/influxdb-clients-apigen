@@ -29,6 +29,7 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.HeaderParameter;
 import io.swagger.v3.oas.models.parameters.Parameter;
+import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import org.apache.commons.io.FileUtils;
@@ -162,10 +163,11 @@ class PostProcessHelper
 		}
 
 		//
-		// Use generic schema for Flags
+		// Use generic schema for Flags and Config
 		//
 		{
 			openAPI.getComponents().getSchemas().put("Flags", new ObjectSchema().additionalProperties(new Schema()));
+			openAPI.getComponents().getSchemas().get("Config").getProperties().put("config", new ObjectSchema().additionalProperties(new Schema()));
 		}
 
 		//
@@ -244,6 +246,18 @@ class PostProcessHelper
 				Schema additionalResources = ((ArraySchema) stackPatch.getProperties().get("additionalResources"))
 						.getItems();
 				additionalResources.setTitle("PatchStackRequest_additionalResources");
+			}
+
+			//
+			// Drop supports for TemplateExportByName
+			//
+			{
+				RequestBody requestBody = openAPI.getPaths().get("/templates/export").getPost().getRequestBody();
+				MediaType mediaType = requestBody.getContent().get("application/json");
+				// Set correct schema to `TemplateExportByID` object
+				Schema schema = ((ComposedSchema) mediaType.getSchema()).getOneOf().get(0);
+				mediaType.schema(schema);
+				dropSchemas("TemplateExportByName");
 			}
 
 			//
@@ -665,6 +679,21 @@ class PostProcessHelper
 		{
 			CodegenModel model = getModel((HashMap) entry.getValue());
 			String modelName = model.getName();
+
+			//
+			// Fix enum vars
+			//
+			for (CodegenProperty allVar : model.getAllVars())
+			{
+				if (allVar.isEnum)
+				{
+					CodegenProperty codegenProperty = getCodegenProperty(model, allVar.baseName);
+					if (codegenProperty != null && !codegenProperty.isEnum)
+					{
+						codegenProperty.isEnum = allVar.isEnum;
+					}
+				}
+			}
 
 			if (modelName.matches("(.*)Check(.*)|(.*)Threshold(.*)|(.*)NotificationEndpoint(.*)|(.*)NotificationRule(.*)") && !"CheckViewProperties".equals(modelName))
 			{

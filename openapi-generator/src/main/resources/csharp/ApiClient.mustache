@@ -41,14 +41,14 @@ namespace {{packageName}}.Client
         /// Allows for extending request processing for <see cref="ApiClient"/> generated code.
         /// </summary>
         /// <param name="request">The RestSharp request object</param>
-        partial void InterceptRequest(IRestRequest request);
+        partial void InterceptRequest(RestRequest request);
 
         /// <summary>
         /// Allows for extending response processing for <see cref="ApiClient"/> generated code.
         /// </summary>
         /// <param name="request">The RestSharp request object</param>
         /// <param name="response">The RestSharp response object</param>
-        partial void InterceptResponse(IRestRequest request, IRestResponse response);
+        partial void InterceptResponse(RestRequest request, RestResponse response);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ApiClient" /> class
@@ -156,7 +156,7 @@ namespace {{packageName}}.Client
                 {{/netStandard}}
                 {{^netStandard}}
                 {{^supportsUWP}}
-                request.AddFile(param.Value.Name, param.Value.Writer, param.Value.FileName, param.Value.ContentLength, param.Value.ContentType);
+                request.AddFile(param.Value.Name, param.Value.GetFile, param.Value.FileName, param.Value.ContentType);
                 {{/supportsUWP}}
                 {{#supportsUWP}}
                 byte[] paramWriter = null;
@@ -172,7 +172,7 @@ namespace {{packageName}}.Client
                 request.AddParameter(new Parameter { Value = postBody, Type = ParameterType.RequestBody, ContentType = contentType });
                 {{/netStandard}}
                 {{^netStandard}}
-                request.AddParameter(contentType, postBody, ParameterType.RequestBody);
+                request.AddParameter(new BodyParameter(contentType, postBody, contentType, postBody is byte[] ? DataFormat.Binary : DataFormat.None));
                 {{/netStandard}}
             }
 
@@ -202,22 +202,13 @@ namespace {{packageName}}.Client
                 path, method, queryParams, postBody, headerParams, formParams, fileParams,
                 pathParams, contentType);
 
-            // set timeout
-            {{#netStandard}}RestClient.Timeout = TimeSpan.FromMilliseconds(Configuration.Timeout);{{/netStandard}}
-            {{^netStandard}}
-            RestClient.Timeout = Configuration.Timeout;
-            RestClient.ReadWriteTimeout = Configuration.ReadWriteTimeout;
-            {{/netStandard}}
-            // set user agent
-            RestClient.UserAgent = Configuration.UserAgent;
-
             InterceptRequest(request);
             {{#netStandard}}
             var response = RestClient.Execute(request).Result;
             {{/netStandard}}
             {{^netStandard}}
             {{^supportsUWP}}
-            var response = RestClient.Execute(request);
+            var response = RestClient.ExecuteAsync(request).ConfigureAwait(false).GetAwaiter().GetResult();
             {{/supportsUWP}}
             {{#supportsUWP}}
             // Using async method to perform sync call (uwp-only)
@@ -335,9 +326,9 @@ namespace {{packageName}}.Client
         /// <param name="response">The HTTP response.</param>
         /// <param name="type">Object type.</param>
         /// <returns>Object representation of the JSON string.</returns>
-        public object Deserialize(IRestResponse response, Type type)
+        public object Deserialize(RestResponse response, Type type)
         {
-            {{^netStandard}}IList<Parameter>{{/netStandard}}{{#netStandard}}IHttpHeaders{{/netStandard}} headers = response.Headers;
+            IEnumerable<HeaderParameter> headers = response.Headers;
             if (type == typeof(byte[])) // return byte array
             {
                 return response.RawBytes;

@@ -118,7 +118,7 @@ namespace {{packageName}}.{{apiPackage}}
         /// <value>The base path</value>
         public String GetBasePath()
         {
-            return this.Configuration.ApiClient.RestClient.BaseUrl.ToString();
+            return this.Configuration.ApiClient.RestClientOptions.BaseUrl.ToString();
         }
 
         /// <summary>
@@ -287,7 +287,7 @@ namespace {{packageName}}.{{apiPackage}}
             {{/authMethods}}
 
             // make the HTTP request
-            IRestResponse localVarResponse = (IRestResponse) this.Configuration.ApiClient.CallApi(localVarPath,
+            RestResponse localVarResponse = (RestResponse) this.Configuration.ApiClient.CallApi(localVarPath,
                 Method.{{httpMethod}}, localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarFileParams,
                 localVarPathParams, localVarHttpContentType);
 
@@ -318,7 +318,7 @@ namespace {{packageName}}.{{apiPackage}}
         {{#allParams}}/// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
         {{/allParams}}/// <param name="cancellationToken">Cancellation token</param>
         /// <returns>ApiResponse of {{#returnType}}{{returnType}}{{/returnType}}{{^returnType}}Object(void){{/returnType}}</returns>
-        public async System.Threading.Tasks.Task<IRestResponse> {{operationId}}WithIRestResponseAsync ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}CancellationToken cancellationToken = default)
+        public async System.Threading.Tasks.Task<RestResponse> {{operationId}}WithIRestResponseAsync ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}CancellationToken cancellationToken = default)
         {
             {{#allParams}}
             {{#required}}
@@ -411,7 +411,7 @@ namespace {{packageName}}.{{apiPackage}}
             {{/authMethods}}
 
             // make the HTTP request
-            IRestResponse localVarResponse = (IRestResponse) await this.Configuration.ApiClient.CallApiAsync(localVarPath,
+            RestResponse localVarResponse = (RestResponse) await this.Configuration.ApiClient.CallApiAsync(localVarPath,
                 Method.{{httpMethod}}, localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarFileParams,
                 localVarPathParams, localVarHttpContentType, cancellationToken).ConfigureAwait(false);
 
@@ -432,7 +432,7 @@ namespace {{packageName}}.{{apiPackage}}
         /// <exception cref="{{packageName}}.Client.ApiException">Thrown when fails to make API call</exception>
         {{#allParams}}/// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
         {{/allParams}}/// <returns>ApiResponse of {{#returnType}}{{returnType}}{{/returnType}}{{^returnType}}Object(void){{/returnType}}</returns>
-        public IRestResponse {{operationId}}WithIRestResponse ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}})
+        public RestResponse {{operationId}}WithIRestResponse ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}})
         {
             {{#allParams}}
             {{#required}}
@@ -525,7 +525,7 @@ namespace {{packageName}}.{{apiPackage}}
             {{/authMethods}}
 
             // make the HTTP request
-            IRestResponse localVarResponse = (IRestResponse) this.Configuration.ApiClient.CallApi(localVarPath,
+            RestResponse localVarResponse = (RestResponse) this.Configuration.ApiClient.CallApi(localVarPath,
                 Method.{{httpMethod}}, localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarFileParams,
                 localVarPathParams, localVarHttpContentType);
 
@@ -668,7 +668,7 @@ namespace {{packageName}}.{{apiPackage}}
         public async System.Threading.Tasks.Task<ApiResponse<{{#returnType}}{{{returnType}}}{{/returnType}}{{^returnType}}Object{{/returnType}}>> {{operationId}}AsyncWithHttpInfo ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}CancellationToken cancellationToken = default)
         {
             // make the HTTP request
-            IRestResponse localVarResponse = await {{operationId}}AsyncWithIRestResponse({{#allParams}}{{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}cancellationToken).ConfigureAwait(false);
+            RestResponse localVarResponse = await {{operationId}}AsyncWithIRestResponse({{#allParams}}{{paramName}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}cancellationToken).ConfigureAwait(false);
 
             int localVarStatusCode = (int) localVarResponse.StatusCode;
 
@@ -696,8 +696,8 @@ namespace {{packageName}}.{{apiPackage}}
         /// <exception cref="{{packageName}}.Client.ApiException">Thrown when fails to make API call</exception>
         {{#allParams}}/// <param name="{{paramName}}">{{description}}{{^required}} (optional{{#defaultValue}}, default to {{.}}{{/defaultValue}}){{/required}}</param>
         {{/allParams}}/// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Task of IRestResponse{{#returnType}} ({{returnType}}){{/returnType}}</returns>
-        public async System.Threading.Tasks.Task<IRestResponse> {{operationId}}AsyncWithIRestResponse ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}CancellationToken cancellationToken = default)
+        /// <returns>Task of RestResponse{{#returnType}} ({{returnType}}){{/returnType}}</returns>
+        public async System.Threading.Tasks.Task<RestResponse> {{operationId}}AsyncWithIRestResponse ({{#allParams}}{{{dataType}}} {{paramName}}{{^required}}{{#optionalMethodArgument}} = null{{/optionalMethodArgument}}{{/required}}{{#hasMore}}, {{/hasMore}}{{/allParams}}{{^allParams.isEmpty}}, {{/allParams.isEmpty}}CancellationToken cancellationToken = default)
         {
             {{#allParams}}
             {{#required}}
@@ -790,7 +790,7 @@ namespace {{packageName}}.{{apiPackage}}
             {{/authMethods}}
 
             // make the HTTP request
-            IRestResponse localVarResponse = (IRestResponse) await this.Configuration.ApiClient.CallApiAsync(localVarPath,
+            RestResponse localVarResponse = (RestResponse) await this.Configuration.ApiClient.CallApiAsync(localVarPath,
                 Method.{{httpMethod}}, localVarQueryParams, localVarPostBody, localVarHeaderParams, localVarFormParams, localVarFileParams,
                 localVarPathParams, localVarHttpContentType, cancellationToken).ConfigureAwait(false);
 
