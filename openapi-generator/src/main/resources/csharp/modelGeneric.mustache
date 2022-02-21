@@ -62,12 +62,12 @@
             {{^isReadOnly}}
             {{#required}}
             // to ensure "{{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}}" is required (not null)
-            {{^isEnum}}
+            {{^isEnum}}{{^vendorExtensions.x-has-static-values}}
             if ({{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}} == null)
             {
                 throw new InvalidDataException("{{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}} is a required property for {{classname}} and cannot be null");
             }
-            {{/isEnum}}
+			{{/vendorExtensions.x-has-static-values}}{{/isEnum}}
             this.{{name}} = {{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}};
             {{/required}}
             {{/isReadOnly}}
