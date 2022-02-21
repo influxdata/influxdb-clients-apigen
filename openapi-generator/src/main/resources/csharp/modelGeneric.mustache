@@ -61,7 +61,7 @@
             {{^isInherited}}
             {{^isReadOnly}}
             {{#required}}
-            // to ensure "{{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}}" is required (not null)
+            {{^vendorExtensions.x-has-static-values}}// to ensure "{{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}}" is required (not null){{/vendorExtensions.x-has-static-values}}
             {{^isEnum}}{{^vendorExtensions.x-has-static-values}}
             if ({{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}} == null)
             {
