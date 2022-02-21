@@ -99,6 +99,13 @@ this.{{name}} = {{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}};
         {{#vars}}
         {{^isInherited}}
         {{^isEnum}}
+        {{#vendorExtensions.x-has-static-values}}
+        // Possible values for {{name}} property:
+        {{#vendorExtensions.x-static-values}}
+        public const string {{title}} = "{{value}}";
+        {{/vendorExtensions.x-static-values}}
+
+        {{/vendorExtensions.x-has-static-values}}
         /// <summary>
         /// {{^description}}Gets or Sets {{{name}}}{{/description}}{{#description}}{{description}}{{/description}}
         /// </summary>{{#description}}

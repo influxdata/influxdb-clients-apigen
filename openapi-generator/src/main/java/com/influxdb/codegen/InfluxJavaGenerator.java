@@ -451,6 +451,12 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 		return false;
 	}
 
+	@Override
+	public boolean permissionResourceTypeAsString()
+	{
+		return true;
+	}
+
 	@NotNull
 	@Override
 	public Collection<String> getTypeAdapterImports()

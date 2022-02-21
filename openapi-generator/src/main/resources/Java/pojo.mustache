@@ -78,6 +78,12 @@ public class {{classname}}{{#vendorExtensions.x-has-generic-type}}{{{vendorExten
     {{/isContainer}}
   {{/isXmlAttribute}}
   {{/withXml}}
+  {{#vendorExtensions.x-has-static-values}}
+  // Possible values for {{name}} property:
+  {{/vendorExtensions.x-has-static-values}}
+  {{#vendorExtensions.x-static-values}}
+  public static String {{title}} = "{{value}}";
+  {{/vendorExtensions.x-static-values}}
   {{#gson}}
   public static final String SERIALIZED_NAME_{{nameInSnakeCase}} = "{{baseName}}";
   @SerializedName(SERIALIZED_NAME_{{nameInSnakeCase}})

@@ -244,6 +244,12 @@ public class InfluxCSharpGenerator extends CSharpClientCodegen implements Influx
 		return true;
 	}
 
+	@Override
+	public boolean permissionResourceTypeAsString()
+	{
+		return true;
+	}
+
 	@NotNull
 	@Override
 	public Collection<String> getTypeAdapterImports()

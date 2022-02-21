@@ -193,6 +193,25 @@ class PostProcessHelper
 		}
 
 		//
+		// Change PermissionResource type to String schema - fixup to avoid exception for non-existing item
+		//
+		if (generator.permissionResourceTypeAsString())
+		{
+			StringSchema oldSchema = (StringSchema) openAPI.getComponents().getSchemas().get("Resource").getProperties().get("type");
+			StringSchema newSchema = new StringSchema();
+			List<Map<String, String>> staticValues = oldSchema.getEnum().stream().map(item -> {
+				Map<String, String> map = new HashMap<>();
+				map.put("title", generator.toEnumVarName("type_" + org.openapitools.codegen.utils.StringUtils.camelize(item), oldSchema.getType()));
+				map.put("value", item);
+
+				return map;
+			}).collect(Collectors.toList());
+			newSchema.addExtension("x-static-values", staticValues);
+			newSchema.addExtension("x-has-static-values", true);
+			changePropertySchema("type", "Resource", newSchema);
+		}
+
+		//
 		// Drop supports for Geo
 		//
 		{

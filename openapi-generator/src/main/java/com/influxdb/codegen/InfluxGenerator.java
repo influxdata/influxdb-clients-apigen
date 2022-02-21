@@ -17,6 +17,8 @@ public interface InfluxGenerator
 
 	String toEnumConstructorDefaultValue(String value, String datatype);
 
+	String toEnumVarName(String value, String datatype);
+
 	@Nullable
 	String optionalDatatypeKeyword();
 
@@ -27,6 +29,8 @@ public interface InfluxGenerator
 	boolean usesOwnAuthorizationSchema();
 
 	boolean supportsStacksTemplates();
+
+	boolean permissionResourceTypeAsString();
 
 	@Nonnull
 	Collection<String> getTypeAdapterImports();
