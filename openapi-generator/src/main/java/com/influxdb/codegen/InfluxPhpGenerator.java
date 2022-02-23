@@ -209,6 +209,12 @@ public class InfluxPhpGenerator extends PhpClientCodegen implements InfluxGenera
 		return false;
 	}
 
+	@Override
+	public boolean permissionResourceTypeAsString()
+	{
+		return false;
+	}
+
 	@NotNull
 	@Override
 	public Collection<String> getTypeAdapterImports()

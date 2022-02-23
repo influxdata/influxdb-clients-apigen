@@ -205,6 +205,12 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
 		return true;
 	}
 
+	@Override
+	public boolean permissionResourceTypeAsString()
+	{
+		return false;
+	}
+
 	@NotNull
 	@Override
 	public Collection<String> getTypeAdapterImports()
