@@ -61,8 +61,7 @@
             {{^isInherited}}
             {{^isReadOnly}}
             {{#required}}
-            {{^vendorExtensions.x-has-static-values}}// to ensure "{{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}}" is required (not null){{/vendorExtensions.x-has-static-values}}
-            {{^isEnum}}{{^vendorExtensions.x-has-static-values}}
+            {{^vendorExtensions.x-has-static-values}}// to ensure "{{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}}" is required (not null){{/vendorExtensions.x-has-static-values}}{{^isEnum}}{{^vendorExtensions.x-has-static-values}}
             if ({{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}} == null)
             {
                 throw new InvalidDataException("{{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}} is a required property for {{classname}} and cannot be null");
