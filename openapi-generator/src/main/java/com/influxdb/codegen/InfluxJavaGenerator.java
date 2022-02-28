@@ -255,7 +255,7 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 					.distinct()
 					.collect(Collectors.toList());
 
-			if (!returnTypes.isEmpty())
+			if (!returnTypes.isEmpty() || "postQuery".equals(operation.operationId))
 			{
 				returnTypes.add("ResponseBody");
 			}
