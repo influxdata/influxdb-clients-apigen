@@ -19,10 +19,10 @@ import tornado.gen
 
 from {{packageName}}.configuration import Configuration
 import {{modelPackage}}
-from influxdb_client._sync import rest
+from influxdb_client._async import rest
 
 
-class ApiClient(object):
+class ApiClientAsync(object):
     """Generic API client for OpenAPI client library Build.
 
     OpenAPI generic API client. This client handles the client-
@@ -65,7 +65,7 @@ class ApiClient(object):
         self.configuration = configuration
         self.pool_threads = pool_threads
 
-        self.rest_client = rest.RESTClientObject(configuration, retries=retries)
+        self.rest_client = rest.RESTClientObjectAsync(configuration, retries=retries)
         self.default_headers = {}
         if header_name is not None:
             self.default_headers[header_name] = header_value
@@ -74,7 +74,8 @@ class ApiClient(object):
         from influxdb_client import CLIENT_VERSION
         self.user_agent = f'influxdb-client-python/{CLIENT_VERSION}'
 
-    def __del__(self):
+    async def close(self):
+        await self.rest_client.close()
         """Dispose pools."""
         if self._pool:
             self._pool.close()
@@ -107,7 +108,7 @@ class ApiClient(object):
     {{#tornado}}
     @tornado.gen.coroutine
     {{/tornado}}
-    {{#asyncio}}async {{/asyncio}}def __call_api(
+    async def __call_api(
             self, resource_path, method, path_params=None,
             query_params=None, header_params=None, body=None, post_params=None,
             files=None, response_type=None, auth_settings=None,
@@ -166,7 +167,7 @@ class ApiClient(object):
         urlopen_kw = urlopen_kw or {}
 
         # perform request and return response
-        response_data = {{#asyncio}}await {{/asyncio}}{{#tornado}}yield {{/tornado}}self.request(
+        response_data = await {{#tornado}}yield {{/tornado}}self.request(
             method, url, query_params=query_params, headers=header_params,
             post_params=post_params, body=body,
             _preload_content=_preload_content,

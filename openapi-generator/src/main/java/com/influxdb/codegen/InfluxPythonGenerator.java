@@ -1,5 +1,6 @@
 package com.influxdb.codegen;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -14,6 +15,7 @@ import io.swagger.v3.oas.models.media.Schema;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.openapitools.codegen.CodegenOperation;
+import org.openapitools.codegen.SupportingFile;
 import org.openapitools.codegen.languages.PythonClientCodegen;
 import org.openapitools.codegen.utils.StringUtils;
 
@@ -72,7 +74,7 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
 
         List<String> useless = Arrays.asList(
                 ".gitignore", ".travis.yml", "README.md", "setup.py", "requirements.txt", "test-requirements.txt",
-                "tox.ini", "git_push.sh");
+                "tox.ini", "git_push.sh", "api_client.py", "rest.py");
 
         //
         // Remove useless supports file
@@ -80,6 +82,14 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
         supportingFiles = supportingFiles.stream()
                 .filter(supportingFile -> !useless.contains(supportingFile.destinationFilename))
                 .collect(Collectors.toList());
+
+		supportingFiles.add(new SupportingFile("api_client.mustache", packageName  + File.separatorChar + "_sync", "api_client.py"));
+		supportingFiles.add(new SupportingFile("rest.mustache", packageName  + File.separatorChar + "_sync", "rest.py"));
+
+		supportingFiles.add(new SupportingFile("api_client_async.mustache", packageName  + File.separatorChar + "_async", "api_client.py"));
+		supportingFiles.add(new SupportingFile("rest_async.mustache", packageName  + File.separatorChar + "_async", "rest.py"));
+
+		supportingFiles.add(new SupportingFile("rest_commons.mustache", packageName, "rest.py"));
     }
 
     @Override
