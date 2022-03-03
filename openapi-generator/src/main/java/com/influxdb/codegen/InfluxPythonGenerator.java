@@ -63,6 +63,9 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
 
 		CodegenOperation op = super.fromOperation(path, httpMethod, operation, definitions, openAPI);
 		postProcessHelper.postProcessOperation(path, operation, op, definitions);
+		if ("/ping".equals(path) && "get".equals(httpMethod)) {
+			op.vendorExtensions.put("x-async-enabled", true);
+		}
 
 		return op;
 	}
