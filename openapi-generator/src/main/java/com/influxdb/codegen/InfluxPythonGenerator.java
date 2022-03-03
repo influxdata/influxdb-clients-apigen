@@ -66,6 +66,12 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
 		if ("/ping".equals(path) && "get".equals(httpMethod)) {
 			op.vendorExtensions.put("x-async-enabled", true);
 		}
+		if ("/query".equals(path)) {
+			op.vendorExtensions.put("x-async-enabled", true);
+		}
+		if ("/write".equals(path)) {
+			op.vendorExtensions.put("x-async-enabled", true);
+		}
 
 		return op;
 	}
