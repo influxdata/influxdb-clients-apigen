@@ -40,6 +40,7 @@ import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -210,7 +211,11 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 					.filter(produce -> !operation.baseName.equals("Metrics"))
 					.map(produce -> {
 
-						PathItem path = globalOpenAPI.getPaths().get(StringUtils.substringAfter(operation.path, "/v2"));
+						String operationPath = StringUtils.substringAfter(operation.path, "/v2");
+						if (!operationPath.startsWith("/")) {
+							operationPath = "/" + operationPath;
+						}
+						PathItem path = globalOpenAPI.getPaths().get(operationPath);
 
 						Operation apiOperation;
 						switch (operation.httpMethod.toLowerCase())
@@ -225,7 +230,11 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 								throw new IllegalStateException();
 						}
 
-						Content content = apiOperation.getResponses().get("200").getContent();
+						ApiResponse apiResponse = apiOperation.getResponses().get("200");
+						if (apiResponse == null) {
+							return "";
+						}
+						Content content = apiResponse.getContent();
 						MediaType mediaType = content.get(produce.get("mediaType"));
 						if (mediaType == null)
 						{
