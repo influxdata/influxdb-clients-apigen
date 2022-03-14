@@ -63,18 +63,7 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
 
 		CodegenOperation op = super.fromOperation(path, httpMethod, operation, definitions, openAPI);
 		postProcessHelper.postProcessOperation(path, operation, op, definitions);
-		if ("/ping".equals(path) && "get".equals(httpMethod)) {
-			op.vendorExtensions.put("x-async-enabled", true);
-		}
-		if ("/query".equals(path)) {
-			op.vendorExtensions.put("x-async-enabled", true);
-		}
-		if ("/write".equals(path)) {
-			op.vendorExtensions.put("x-async-enabled", true);
-		}
-		if ("/delete".equals(path)) {
-			op.vendorExtensions.put("x-async-enabled", true);
-		}
+		op.vendorExtensions.put("x-async-enabled", true);
 
 		return op;
 	}
@@ -95,13 +84,14 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
                 .filter(supportingFile -> !useless.contains(supportingFile.destinationFilename))
                 .collect(Collectors.toList());
 
-		supportingFiles.add(new SupportingFile("api_client.mustache", packageName  + File.separatorChar + "_sync", "api_client.py"));
-		supportingFiles.add(new SupportingFile("rest.mustache", packageName  + File.separatorChar + "_sync", "rest.py"));
+		supportingFiles.add(new SupportingFile("api_client.mustache", packageName + File.separatorChar + "_sync", "api_client.py"));
+		supportingFiles.add(new SupportingFile("rest.mustache", packageName + File.separatorChar + "_sync", "rest.py"));
 
-		supportingFiles.add(new SupportingFile("api_client_async.mustache", packageName  + File.separatorChar + "_async", "api_client.py"));
-		supportingFiles.add(new SupportingFile("rest_async.mustache", packageName  + File.separatorChar + "_async", "rest.py"));
+		supportingFiles.add(new SupportingFile("api_client_async.mustache", packageName + File.separatorChar + "_async", "api_client.py"));
+		supportingFiles.add(new SupportingFile("rest_async.mustache", packageName + File.separatorChar + "_async", "rest.py"));
 
 		supportingFiles.add(new SupportingFile("rest_commons.mustache", packageName, "rest.py"));
+		supportingFiles.add(new SupportingFile("_base_service.mustache", packageName + File.separatorChar + "service", "_base_service.py"));
     }
 
     @Override
