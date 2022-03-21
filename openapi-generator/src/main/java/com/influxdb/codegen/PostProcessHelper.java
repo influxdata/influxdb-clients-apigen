@@ -383,6 +383,15 @@ class PostProcessHelper
 		}
 
 		//
+		// Fix ScriptInvocationParams - has to be key-value map
+		//
+		if (openAPI.getComponents().getSchemas().containsKey("ScriptInvocationParams"))
+		{
+			Schema newPropertySchema = new ObjectSchema().additionalProperties(new ObjectSchema());
+			changePropertySchema("params", "ScriptInvocationParams", newPropertySchema);
+		}
+
+		//
 		// Trim description
 		//
 		openAPI.getComponents().getParameters().forEach((s, parameter) -> {
