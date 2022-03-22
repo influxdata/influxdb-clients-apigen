@@ -279,6 +279,7 @@ workflows:
       - generate-client:
           name: generate-java
           client: java
+          contracts: "oss.yml invocable-scripts.yml"
       - generate-client:
           name: generate-php
           client: php
@@ -314,6 +315,7 @@ workflows:
       - generate-client:
           name: generate-java
           client: java
+          contracts: "oss.yml invocable-scripts.yml"
       - generate-client:
           name: generate-php
           client: php
