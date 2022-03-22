@@ -200,7 +200,7 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
         // For operations with more response type (Accept) generate additional implementation
         //
 		List<CodegenOperation> operationToSplit = operations.stream()
-				.filter(operation -> operation.produces != null && operation.produces.size() > 1)
+				.filter(operation -> (operation.produces != null && operation.produces.size() > 1) || operation.operationId.equals("postScriptsIDInvoke"))
 				.filter(operation -> !operation.operationId.equals("postWrite"))
 				.collect(Collectors.toList());
 
@@ -264,7 +264,7 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 					.distinct()
 					.collect(Collectors.toList());
 
-			if (!returnTypes.isEmpty() || "postQuery".equals(operation.operationId))
+			if (!returnTypes.isEmpty() || "postQuery".equals(operation.operationId) || "postScriptsIDInvoke".equals(operation.operationId))
 			{
 				returnTypes.add("ResponseBody");
 			}
