@@ -1,4 +1,4 @@
-# Swagger code generator for InfluxDB 2.0 client libraries 
+# Swagger code generator for InfluxDB 2.x client libraries 
 
 [![CircleCI](https://circleci.com/gh/bonitoo-io/influxdb-clients-apigen.svg?style=svg)](https://circleci.com/gh/bonitoo-io/influxdb-clients-apigen)
 [![License](https://img.shields.io/github/license/bonitoo-io/influxdb-clients-apigen.svg)](https://github.com/bonitoo-io/influxdb-clients-apigen/blob/master/LICENSE)

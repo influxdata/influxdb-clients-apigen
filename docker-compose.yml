@@ -36,7 +36,7 @@ services:
     network_mode: host
 
   influxdb_v2:
-    image: quay.io/influxdb/influxdb:2.0.0-beta
+    image: influxdb:latest
     ports:
       - "9999:9999"
     command: influxd --reporting-disabled
