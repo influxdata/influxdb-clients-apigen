@@ -302,7 +302,7 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 			operations.add(operationRx);
 
 			List<Map<String, String>> imports = (List<Map<String, String>>) objs.get("imports");
-			imports.add(ImmutableMap.of("import", "io.reactivex.Single", "classname", "Single"));
+			imports.add(ImmutableMap.of("import", "io.reactivex.rxjava3.core.Single", "classname", "Single"));
 			imports.add(ImmutableMap.of("import", "retrofit2.Response", "classname", "Response"));
 		}
 
