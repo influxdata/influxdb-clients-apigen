@@ -21,11 +21,9 @@
  */
 package com.influxdb.codegen;
 
-import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -343,6 +341,7 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 
 		CodegenModel model = super.fromModel(name, schema, allDefinitions);
 		postProcessHelper.postProcessModel(model, schema, allDefinitions);
+		model.imports.remove("ApiModel");
 
 		return model;
 	}
@@ -351,6 +350,10 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 	public void postProcessModelProperty(final CodegenModel model, final CodegenProperty property)
 	{
 		super.postProcessModelProperty(model, property);
+
+		model.imports.remove("ApiModelProperty");
+		model.imports.remove("ApiModel");
+
 		postProcessHelper.postProcessModelProperty(model, property);
 	}
 

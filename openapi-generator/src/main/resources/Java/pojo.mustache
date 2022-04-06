@@ -21,8 +21,7 @@
 }}
 /**
  * {{#description}}{{.}}{{/description}}{{^description}}{{classname}}{{/description}}
- */{{#description}}
-@ApiModel(description = "{{{description}}}"){{/description}}
+ */
 {{>generatedAnnotation}}{{>xmlAnnotation}}
 public class {{classname}}{{#vendorExtensions.x-has-generic-type}}{{{vendorExtensions.x-generic-type}}}{{/vendorExtensions.x-has-generic-type}} {{#parent}}extends {{{parent}}} {{/parent}}{{#parcelableModel}}implements Parcelable {{#serializableModel}}, Serializable {{/serializableModel}}{{/parcelableModel}}{{^parcelableModel}}{{#serializableModel}}implements Serializable {{/serializableModel}}{{/parcelableModel}}{
 {{#serializableModel}}
@@ -160,7 +159,6 @@ public class {{classname}}{{#vendorExtensions.x-has-generic-type}}{{{vendorExten
   {{/maximum}}
    * @return {{name}}
   **/
-{{#useBeanValidation}}{{>beanValidation}}{{/useBeanValidation}}  @ApiModelProperty({{#example}}example = "{{{example}}}", {{/example}}{{#required}}required = {{required}}, {{/required}}value = "{{{description}}}")
 {{#vendorExtensions.extraAnnotation}}
   {{{vendorExtensions.extraAnnotation}}}
 {{/vendorExtensions.extraAnnotation}}
