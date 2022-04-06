@@ -277,6 +277,7 @@ workflows:
       - generate-client:
           name: generate-csharp
           client: csharp
+          contracts: "oss.yml invocable-scripts.yml"
       - generate-client:
           name: generate-java
           client: java
@@ -314,6 +315,7 @@ workflows:
       - generate-client:
           name: generate-csharp
           client: csharp
+          contracts: "oss.yml invocable-scripts.yml"
       - generate-client:
           name: generate-java
           client: java
