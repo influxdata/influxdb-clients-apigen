@@ -289,6 +289,7 @@ workflows:
           name: generate-java
           client: java
           contracts: "oss.yml invocable-scripts.yml"
+          definitions: "oss.yml --write-consistency"
       - generate-client:
           name: generate-php
           client: php
