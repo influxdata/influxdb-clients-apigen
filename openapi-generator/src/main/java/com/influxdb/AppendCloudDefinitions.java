@@ -52,7 +52,7 @@ public class AppendCloudDefinitions
 		LOG.info("Updated: " + args[0]);
 	}
 
-	private static <T> T mapValue(String[] paths, Object object)
+	protected static <T> T mapValue(String[] paths, Object object)
 	{
 		if (paths.length == 0)
 		{

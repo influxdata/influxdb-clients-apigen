@@ -52,6 +52,9 @@ jobs:
       contracts:
         type: string
         default: "oss.yml"
+      definitions:
+        type: string
+        default: "oss.yml --nothing"
     steps:
       - checkout
       - restore_cache:
@@ -72,6 +75,10 @@ jobs:
           name: "Append Cloud definitions"
           command: |
             mvn -f openapi-generator/pom.xml exec:java -Dexec.mainClass="com.influxdb.AppendCloudDefinitions" -Dexec.args="oss.yml cloud.yml"
+      - run:
+          name: "Append Custom definitions << parameters.definitions >>"
+          command: |
+            mvn -f openapi-generator/pom.xml exec:java -Dexec.mainClass="com.influxdb.AppendCustomDefinitions" -Dexec.args="<< parameters.definitions >>"
       - clone-client:
           client: influxdb-client-<< parameters.client >>
           branch: << parameters.branch >>
@@ -282,6 +289,7 @@ workflows:
           name: generate-java
           client: java
           contracts: "oss.yml invocable-scripts.yml"
+          definitions: "oss.yml --write-consistency"
       - generate-client:
           name: generate-php
           client: php
@@ -320,6 +328,7 @@ workflows:
           name: generate-java
           client: java
           contracts: "oss.yml invocable-scripts.yml"
+          definitions: "oss.yml --write-consistency"
       - generate-client:
           name: generate-php
           client: php
