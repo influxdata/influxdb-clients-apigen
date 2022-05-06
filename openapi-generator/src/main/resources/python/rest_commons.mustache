@@ -1,10 +1,10 @@
 # coding: utf-8
 
 {{>partial_header}}
-
 from __future__ import absolute_import
 
 from influxdb_client.client.exceptions import InfluxDBError
+from influxdb_client.configuration import Configuration
 
 _UTF_8_encoding = 'utf-8'
 
@@ -32,7 +32,7 @@ class ApiException(InfluxDBError):
 
     def __str__(self):
         """Get custom error messages for exception."""
-        error_message = "({0})\n"\
+        error_message = "({0})\n" \
                         "Reason: {1}\n".format(self.status, self.reason)
         if self.headers:
             error_message += "HTTP response headers: {0}\n".format(
@@ -42,3 +42,12 @@ class ApiException(InfluxDBError):
             error_message += "HTTP response body: {0}\n".format(self.body)
 
         return error_message
+
+
+def _requires_create_user_session(configuration: Configuration, cookie: str, resource_path: str):
+    _unauthorized = ['/api/v2/signin', '/api/v2/signout']
+    return configuration.username and configuration.password and not cookie and resource_path not in _unauthorized
+
+
+def _requires_expire_user_session(configuration: Configuration, cookie: str):
+    return configuration.username and configuration.password and cookie
