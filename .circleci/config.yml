@@ -42,7 +42,7 @@ commands:
 jobs:
   generate-client:
     docker:
-      - image: "circleci/openjdk:8-stretch"
+      - image: "cimg/openjdk:8.0"
     parameters:
       client:
         type: string
@@ -173,7 +173,7 @@ jobs:
           path: ./build/influxdb-client-csharp/test-results
   check-generated-java:
     docker:
-      - image: "circleci/openjdk:8"
+      - image: "cimg/openjdk:8.0"
       - image: "influxdb:latest"
         environment:
           INFLUXD_HTTP_BIND_ADDRESS: :9999
