@@ -321,6 +321,12 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 			operations.forEach(operation -> operation.returnType = "ResponseBody");
 		}
 
+		//
+		// Fix unrelated imports
+		//
+		List<Map<String, String>> imports = (List<Map<String, String>>) objs.get("imports");
+		imports.removeIf(stringStringMap -> stringStringMap.get("import").contains("Error"));
+
 		return operationsWithModels;
 	}
 
