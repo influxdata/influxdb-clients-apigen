@@ -97,7 +97,7 @@ jobs:
             - ~/.m2
   check-generated-python:
     docker:
-      - image: "circleci/python:3.6-buster"
+      - image: "circleci/python:3.7-buster"
         environment:
           PIPENV_VENV_IN_PROJECT: true
       - image: "influxdb:latest"
