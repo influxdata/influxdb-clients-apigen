@@ -45,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenProperty;
+import org.openapitools.codegen.SupportingFile;
 import org.openapitools.codegen.languages.JavaClientCodegen;
 import org.openapitools.codegen.utils.ModelUtils;
 
@@ -182,6 +183,13 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 		supportingFiles = supportingFiles.stream()
 				.filter(supportingFile -> supportingFile.destinationFilename.equals("JSON.java"))
 				.collect(Collectors.toList());
+
+
+		//
+		// Add custom supporting file.
+		//
+		String apiFolder = (this.sourceFolder + '/' + this.apiPackage).replace(".", "/");
+		this.supportingFiles.add(new SupportingFile("api/InfluxQLQueryService.mustache", apiFolder, "InfluxQLQueryService.java"));
 	}
 
 	@Override
