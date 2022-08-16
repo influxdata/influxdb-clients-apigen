@@ -1,0 +1,26 @@
+diff --git a/Client.Test/ItBucketsApiTest.cs b/Client.Test/ItBucketsApiTest.cs
+index 0eef7d9..561fbdd 100644
+--- a/Client.Test/ItBucketsApiTest.cs
++++ b/Client.Test/ItBucketsApiTest.cs
+@@ -53,7 +53,7 @@ namespace InfluxDB.Client.Test
+ 
+             Assert.AreEqual(name, cloned.Name);
+             Assert.AreEqual(_organization.Id, cloned.OrgID);
+-            Assert.IsNull(cloned.Rp);
++            Assert.AreEqual("0", cloned.Rp);
+             Assert.AreEqual(1, cloned.RetentionRules.Count);
+             Assert.AreEqual(3600, cloned.RetentionRules[0].EverySeconds);
+             Assert.AreEqual(BucketRetentionRules.TypeEnum.Expire, cloned.RetentionRules[0].Type);
+diff --git a/Client/UsersApi.cs b/Client/UsersApi.cs
+index bb4899a..cbf0283 100644
+--- a/Client/UsersApi.cs
++++ b/Client/UsersApi.cs
+@@ -366,7 +366,7 @@ namespace InfluxDB.Client
+         private PostUser ToPostUser(User user)
+         {
+             Enum.TryParse(user.Status.ToString(), true, out PostUser.StatusEnum status);
+-            var postUser = new PostUser(user.OauthID, user.Name, status);
++            var postUser = new PostUser(name: user.Name, status: status);
+             return postUser;
+         }
+     }
