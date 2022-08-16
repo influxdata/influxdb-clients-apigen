@@ -1,5 +1,5 @@
 diff --git a/Client/UsersApi.cs b/Client/UsersApi.cs
-index bb4899a..7f82854 100644
+index bb4899a..cbf0283 100644
 --- a/Client/UsersApi.cs
 +++ b/Client/UsersApi.cs
 @@ -366,7 +366,7 @@ namespace InfluxDB.Client
@@ -7,7 +7,7 @@ index bb4899a..7f82854 100644
          {
              Enum.TryParse(user.Status.ToString(), true, out PostUser.StatusEnum status);
 -            var postUser = new PostUser(user.OauthID, user.Name, status);
-+            var postUser = new PostUser(user.Name, status);
++            var postUser = new PostUser(name: user.Name, status: status);
              return postUser;
          }
      }
