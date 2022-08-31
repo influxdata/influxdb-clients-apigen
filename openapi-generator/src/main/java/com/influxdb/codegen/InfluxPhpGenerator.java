@@ -206,7 +206,7 @@ public class InfluxPhpGenerator extends PhpClientCodegen implements InfluxGenera
 	@Override
 	public boolean supportsStacksTemplates()
 	{
-		return false;
+		return true;
 	}
 
 	@Override
