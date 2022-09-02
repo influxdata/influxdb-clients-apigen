@@ -11,6 +11,19 @@ index 0eef7d9..561fbdd 100644
              Assert.AreEqual(1, cloned.RetentionRules.Count);
              Assert.AreEqual(3600, cloned.RetentionRules[0].EverySeconds);
              Assert.AreEqual(BucketRetentionRules.TypeEnum.Expire, cloned.RetentionRules[0].Type);
+diff --git a/Client/InvokableScriptsApi.cs b/Client/InvokableScriptsApi.cs
+index 79f4b06..a1921fd 100644
+--- a/Client/InvokableScriptsApi.cs
++++ b/Client/InvokableScriptsApi.cs
+@@ -174,7 +174,7 @@ namespace InfluxDB.Client
+         public Task<List<Script>> FindScriptsAsync(int? offset = null, int? limit = null,
+             CancellationToken cancellationToken = default)
+         {
+-            return _service.GetScriptsAsync(limit, offset, cancellationToken)
++            return _service.GetScriptsAsync(limit, offset, cancellationToken: cancellationToken)
+                 .ContinueWith(t => t.Result._Scripts, cancellationToken);
+         }
+ 
 diff --git a/Client/UsersApi.cs b/Client/UsersApi.cs
 index bb4899a..cbf0283 100644
 --- a/Client/UsersApi.cs
