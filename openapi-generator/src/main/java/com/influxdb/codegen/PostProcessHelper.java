@@ -301,6 +301,16 @@ class PostProcessHelper
 					.values().forEach(mediaType -> mediaType.setSchema(new StringSchema()));
 		}
 
+		// Fix label mapping for InvokableScripts
+		{
+			Arrays.asList(openAPI.getPaths().get("/scripts/{scriptID}/labels/add"),
+							openAPI.getPaths().get("/scripts/{scriptID}/labels/remove"))
+					.forEach(pathItem -> pathItem.getPatch()
+					.getRequestBody()
+					.getContent()
+					.values().forEach(mediaType -> mediaType.setSchema(new Schema().$ref("#/components/schemas/LabelMapping"))));
+		}
+
 		//
 		// Drop entity with multiple inheritance
 		//
