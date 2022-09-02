@@ -1,3 +1,16 @@
+diff --git a/client/src/main/java/com/influxdb/client/internal/InvokableScriptsApiImpl.java b/client/src/main/java/com/influxdb/client/internal/InvokableScriptsApiImpl.java
+index 8f66707f70..cd96ad47ad 100644
+--- a/client/src/main/java/com/influxdb/client/internal/InvokableScriptsApiImpl.java
++++ b/client/src/main/java/com/influxdb/client/internal/InvokableScriptsApiImpl.java
+@@ -94,7 +94,7 @@ final class InvokableScriptsApiImpl extends AbstractQueryApi implements Invokabl
+ 
+         Arguments.checkNotNull(query, "query");
+ 
+-        Call<Scripts> call = service.getScripts(query.getLimit(), query.getOffset());
++        Call<Scripts> call = service.getScripts(query.getLimit(), query.getOffset(), null, null, null);
+ 
+         return execute(call).getScripts();
+     }
 diff --git a/client/src/main/java/com/influxdb/client/internal/UsersApiImpl.java b/client/src/main/java/com/influxdb/client/internal/UsersApiImpl.java
 index b841ac27c2..8be6a7eb82 100644
 --- a/client/src/main/java/com/influxdb/client/internal/UsersApiImpl.java
