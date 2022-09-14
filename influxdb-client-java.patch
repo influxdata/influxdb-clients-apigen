@@ -1,3 +1,30 @@
+diff --git a/client/src/main/java/com/influxdb/client/UsersApi.java b/client/src/main/java/com/influxdb/client/UsersApi.java
+index 8da414e64f..1bf4c843f0 100644
+--- a/client/src/main/java/com/influxdb/client/UsersApi.java
++++ b/client/src/main/java/com/influxdb/client/UsersApi.java
+@@ -66,22 +66,18 @@ public interface UsersApi {
+      * Update password to an user.
+      *
+      * @param user        user to update password
+-     * @param oldPassword old password
+      * @param newPassword new password
+      */
+     void updateUserPassword(@Nonnull final User user,
+-                            @Nonnull final String oldPassword,
+                             @Nonnull final String newPassword);
+ 
+     /**
+      * Update password to an user.
+      *
+      * @param userID      ID of user to update password
+-     * @param oldPassword old password
+      * @param newPassword new password
+      */
+     void updateUserPassword(@Nonnull final String userID,
+-                            @Nonnull final String oldPassword,
+                             @Nonnull final String newPassword);
+ 
+     /**
 diff --git a/client/src/main/java/com/influxdb/client/internal/InvokableScriptsApiImpl.java b/client/src/main/java/com/influxdb/client/internal/InvokableScriptsApiImpl.java
 index 8f66707f70..cd96ad47ad 100644
 --- a/client/src/main/java/com/influxdb/client/internal/InvokableScriptsApiImpl.java
@@ -12,7 +39,7 @@ index 8f66707f70..cd96ad47ad 100644
          return execute(call).getScripts();
      }
 diff --git a/client/src/main/java/com/influxdb/client/internal/UsersApiImpl.java b/client/src/main/java/com/influxdb/client/internal/UsersApiImpl.java
-index b841ac27c2..8be6a7eb82 100644
+index b841ac27c2..e6d2c5054a 100644
 --- a/client/src/main/java/com/influxdb/client/internal/UsersApiImpl.java
 +++ b/client/src/main/java/com/influxdb/client/internal/UsersApiImpl.java
 @@ -96,7 +96,6 @@ final class UsersApiImpl extends AbstractRestClient implements UsersApi {
@@ -31,3 +58,140 @@ index b841ac27c2..8be6a7eb82 100644
                  .name(user.getName())
                  .status(PostUser.StatusEnum.fromValue(user.getStatus().getValue()));
  
+@@ -123,29 +121,25 @@ final class UsersApiImpl extends AbstractRestClient implements UsersApi {
+ 
+     @Override
+     public void updateUserPassword(@Nonnull final User user,
+-                                   @Nonnull final String oldPassword,
+                                    @Nonnull final String newPassword) {
+ 
+         Arguments.checkNotNull(user, "User");
+-        Arguments.checkNotNull(oldPassword, "old password");
+         Arguments.checkNotNull(newPassword, "new password");
+ 
+-        updateUserPassword(user.getId(), user.getName(), oldPassword, newPassword);
++        updateUserPassword(user.getId(), newPassword);
+     }
+ 
+     @Override
+     public void updateUserPassword(@Nonnull final String userID,
+-                                   @Nonnull final String oldPassword,
+                                    @Nonnull final String newPassword) {
+ 
+         Arguments.checkNotNull(userID, "User ID");
+-        Arguments.checkNotNull(oldPassword, "old password");
+         Arguments.checkNotNull(newPassword, "new password");
+ 
+-        Call<User> userByID = service.getUsersID(userID, null);
+-        User user = execute(userByID);
++        PasswordResetBody resetBody = new PasswordResetBody().password(newPassword);
++        Call<Void> call = service.postUsersIDPassword(userID, resetBody, null);
+ 
+-        updateUserPassword(userID, user.getName(), oldPassword, newPassword);
++        execute(call);
+     }
+ 
+     @Override
+@@ -216,22 +210,4 @@ final class UsersApiImpl extends AbstractRestClient implements UsersApi {
+ 
+         execute(call);
+     }
+-
+-    private void updateUserPassword(@Nonnull final String userID,
+-                                    @Nonnull final String userName,
+-                                    @Nonnull final String oldPassword,
+-                                    @Nonnull final String newPassword) {
+-
+-        Arguments.checkNotNull(userID, "User ID");
+-        Arguments.checkNotNull(userName, "Username");
+-        Arguments.checkNotNull(oldPassword, "old password");
+-        Arguments.checkNotNull(newPassword, "new password");
+-
+-        String credentials = Credentials.basic(userName, oldPassword);
+-
+-        PasswordResetBody resetBody = new PasswordResetBody().password(newPassword);
+-        Call<Void> call = service.postUsersIDPassword(userID, resetBody, null, credentials);
+-
+-        execute(call);
+-    }
+ }
+\ No newline at end of file
+diff --git a/client/src/test/java/com/influxdb/client/ITUsersApi.java b/client/src/test/java/com/influxdb/client/ITUsersApi.java
+index 50ecf32fb8..4397397dd9 100644
+--- a/client/src/test/java/com/influxdb/client/ITUsersApi.java
++++ b/client/src/test/java/com/influxdb/client/ITUsersApi.java
+@@ -122,13 +122,14 @@ class ITUsersApi extends AbstractITClientTest {
+     void updateUser() {
+ 
+         User createdUser = usersApi.createUser(generateName("John Ryzen"));
+-        createdUser.setName("Tom Push");
++        String newName = generateName("Tom Push");
++        createdUser.setName(newName);
+ 
+         User updatedUser = usersApi.updateUser(createdUser);
+ 
+         Assertions.assertThat(updatedUser).isNotNull();
+         Assertions.assertThat(updatedUser.getId()).isEqualTo(createdUser.getId());
+-        Assertions.assertThat(updatedUser.getName()).isEqualTo("Tom Push");
++        Assertions.assertThat(updatedUser.getName()).isEqualTo(newName);
+     }
+ 
+     @Test
+@@ -169,51 +170,37 @@ class ITUsersApi extends AbstractITClientTest {
+     }
+ 
+     @Test
+-    @Tag("basic_auth")
+-    @Disabled("TODO not implemented set password https://github.com/influxdata/influxdb/pull/15981")
+     void updatePassword() {
+ 
+         User user = usersApi.me();
+         Assertions.assertThat(user).isNotNull();
+ 
+-        usersApi.updateUserPassword(user, "my-password", "my-password");
++        usersApi.updateUserPassword(user, "my-password");
+     }
+ 
+-    //TODO set user password -> https://github.com/influxdata/influxdb/issues/11590
+     @Test
+-    @Disabled
+     void createNewUserAndSetPassword() throws Exception {
+ 
+         User myNewUser = usersApi.createUser(generateName("My new user"));
+ 
+-        influxDBClient.close();
+-
+-        //TODO set user password -> https://github.com/influxdata/influxdb/issues/11590
+-        influxDBClient = InfluxDBClientFactory.create(influxDB_URL, "my-user", "my-password".toCharArray());
+-        usersApi = influxDBClient.getUsersApi();
+-
+-        usersApi.updateUserPassword(myNewUser, "", "strong-password");
++        influxDBClient.getUsersApi().updateUserPassword(myNewUser, "strong-password");
+     }
+ 
+     @Test
+-    @Tag("basic_auth")
+-    @Disabled("TODO not implemented set password https://github.com/influxdata/influxdb/pull/15981")
+     void updatePasswordNotFound() {
+ 
+-        Assertions.assertThatThrownBy(() -> usersApi.updateUserPassword("020f755c3c082000", "", "new-password"))
+-                .isInstanceOf(NotFoundException.class)
+-                .hasMessage("user not found");
++        Assertions.assertThatThrownBy(() -> usersApi.updateUserPassword("020f755c3c082000", "new-password"))
++                .isInstanceOf(ForbiddenException.class)
++                .hasMessageContaining("your userID is incorrect");
+     }
+ 
+     @Test
+-    @Tag("basic_auth")
+-    @Disabled("TODO not implemented set password https://github.com/influxdata/influxdb/pull/15981")
+     void updatePasswordById() {
+ 
+         User user = usersApi.me();
+         Assertions.assertThat(user).isNotNull();
+ 
+-        usersApi.updateUserPassword(user.getId(), "my-password", "my-password");
++        usersApi.updateUserPassword(user.getId(), "my-password");
+     }
+ 
+     @Test
