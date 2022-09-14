@@ -343,11 +343,19 @@ class PostProcessHelper
 											securityRequirement.containsKey("BasicAuthentication"));
 							if (containsBasicAuth)
 							{
-								Parameter authorization = new HeaderParameter()
-										.name("Authorization")
-										.schema(new StringSchema())
-										.description("An auth credential for the Basic scheme");
-								operation.addParametersItem(authorization);
+								// the BasicAuth is not required for this operation
+								if (operation.getOperationId().equals("PostUsersIDPassword"))
+								{
+									operation.security(null);
+								}
+								else
+								{
+									Parameter authorization = new HeaderParameter()
+											.name("Authorization")
+											.schema(new StringSchema())
+											.description("An auth credential for the Basic scheme");
+									operation.addParametersItem(authorization);
+								}
 							}
 						});
 			});
