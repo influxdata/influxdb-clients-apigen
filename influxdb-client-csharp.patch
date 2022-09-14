@@ -11,6 +11,58 @@ index 0eef7d9..561fbdd 100644
              Assert.AreEqual(1, cloned.RetentionRules.Count);
              Assert.AreEqual(3600, cloned.RetentionRules[0].EverySeconds);
              Assert.AreEqual(BucketRetentionRules.TypeEnum.Expire, cloned.RetentionRules[0].Type);
+diff --git a/Client.Test/ItUsersApiTest.cs b/Client.Test/ItUsersApiTest.cs
+index 5c7307b..5cc929c 100644
+--- a/Client.Test/ItUsersApiTest.cs
++++ b/Client.Test/ItUsersApiTest.cs
+@@ -1,4 +1,3 @@
+-using System;
+ using System.Linq;
+ using System.Threading.Tasks;
+ using InfluxDB.Client.Core.Exceptions;
+@@ -109,36 +108,32 @@ namespace InfluxDB.Client.Test
+         }
+ 
+         [Test]
+-        [Property("basic_auth", "true")]
+-        [Ignore("TODO not implemented set password https://github.com/influxdata/influxdb/pull/15981")]
+         public async Task UpdatePassword()
+         {
+             var user = await _usersApi.MeAsync();
+             Assert.IsNotNull(user);
+ 
+-            await _usersApi.UpdateUserPasswordAsync(user, "my-password", "my-password");
++            await _usersApi.UpdateUserPasswordAsync(user, "my-password");
+         }
+ 
+         [Test]
+-        [Property("basic_auth", "true")]
+-        [Ignore("TODO not implemented set password https://github.com/influxdata/influxdb/pull/15981")]
+         public async Task UpdatePasswordById()
+         {
+             var user = await _usersApi.MeAsync();
+             Assert.IsNotNull(user);
+ 
+-            await _usersApi.UpdateUserPasswordAsync(user.Id, "my-password", "my-password");
++            await _usersApi.UpdateUserPasswordAsync(user.Id, "my-password");
+         }
+ 
+         [Test]
+         public void UpdatePasswordNotFound()
+         {
+-            var ioe = Assert.ThrowsAsync<AggregateException>(async () =>
+-                await _usersApi.UpdateUserPasswordAsync("020f755c3c082000", "", "new-password"));
++            var ioe = Assert.ThrowsAsync<ForbiddenException>(async () =>
++                await _usersApi.UpdateUserPasswordAsync("020f755c3c082000", "new-password"));
+ 
+             Assert.IsNotNull(ioe);
+-            Assert.AreEqual("user not found", ioe.InnerException.Message);
+-            Assert.AreEqual(typeof(NotFoundException), ioe.InnerException.GetType());
++            Assert.AreEqual("your userID is incorrect", ioe.Message);
++            Assert.AreEqual(typeof(ForbiddenException), ioe.GetType());
+         }
+ 
+         [Test]
 diff --git a/Client/InvokableScriptsApi.cs b/Client/InvokableScriptsApi.cs
 index 79f4b06..a1921fd 100644
 --- a/Client/InvokableScriptsApi.cs
@@ -25,10 +77,113 @@ index 79f4b06..a1921fd 100644
          }
  
 diff --git a/Client/UsersApi.cs b/Client/UsersApi.cs
-index bb4899a..cbf0283 100644
+index bb4899a..a5a920e 100644
 --- a/Client/UsersApi.cs
 +++ b/Client/UsersApi.cs
-@@ -366,7 +366,7 @@ namespace InfluxDB.Client
+@@ -39,22 +39,20 @@ namespace InfluxDB.Client
+         /// Update password to an user.
+         /// </summary>
+         /// <param name="user">user to update password</param>
+-        /// <param name="oldPassword">old password</param>
+         /// <param name="newPassword">new password</param>
+         /// <param name="cancellationToken">Cancellation token</param>
+         /// <returns>user updated</returns>
+-        Task UpdateUserPasswordAsync(User user, string oldPassword, string newPassword,
++        Task UpdateUserPasswordAsync(User user, string newPassword,
+             CancellationToken cancellationToken = default);
+ 
+         /// <summary>
+         /// Update password to an user.
+         /// </summary>
+         /// <param name="userId">ID of user to update password</param>
+-        /// <param name="oldPassword">old password</param>
+         /// <param name="newPassword">new password</param>
+         /// <param name="cancellationToken">Cancellation token</param>
+         /// <returns>user updated</returns>
+-        Task UpdateUserPasswordAsync(string userId, string oldPassword, string newPassword,
++        Task UpdateUserPasswordAsync(string userId, string newPassword,
+             CancellationToken cancellationToken = default);
+ 
+         /// <summary>
+@@ -152,7 +150,7 @@ namespace InfluxDB.Client
+         {
+             Arguments.CheckNonEmptyString(name, nameof(name));
+ 
+-            var user = new User(name: name);
++            var user = new User(name);
+ 
+             return CreateUserAsync(user, cancellationToken);
+         }
+@@ -187,37 +185,33 @@ namespace InfluxDB.Client
+         /// Update password to an user.
+         /// </summary>
+         /// <param name="user">user to update password</param>
+-        /// <param name="oldPassword">old password</param>
+         /// <param name="newPassword">new password</param>
+         /// <param name="cancellationToken">Cancellation token</param>
+         /// <returns>user updated</returns>
+-        public Task UpdateUserPasswordAsync(User user, string oldPassword, string newPassword,
++        public Task UpdateUserPasswordAsync(User user, string newPassword,
+             CancellationToken cancellationToken = default)
+         {
+             Arguments.CheckNotNull(user, nameof(user));
+-            Arguments.CheckNotNull(oldPassword, nameof(oldPassword));
+             Arguments.CheckNotNull(newPassword, nameof(newPassword));
+ 
+-            return UpdateUserPasswordAsync(user.Id, user.Name, oldPassword, newPassword, cancellationToken);
++            return UpdateUserPasswordAsync(user.Id, newPassword, cancellationToken);
+         }
+ 
+         /// <summary>
+         /// Update password to an user.
+         /// </summary>
+         /// <param name="userId">ID of user to update password</param>
+-        /// <param name="oldPassword">old password</param>
+         /// <param name="newPassword">new password</param>
+         /// <param name="cancellationToken">Cancellation token</param>
+         /// <returns>user updated</returns>
+-        public Task UpdateUserPasswordAsync(string userId, string oldPassword, string newPassword,
++        public Task UpdateUserPasswordAsync(string userId, string newPassword,
+             CancellationToken cancellationToken = default)
+         {
+             Arguments.CheckNotNull(userId, nameof(userId));
+-            Arguments.CheckNotNull(oldPassword, nameof(oldPassword));
+             Arguments.CheckNotNull(newPassword, nameof(newPassword));
+ 
+-            return FindUserByIdAsync(userId, cancellationToken)
+-                .ContinueWith(t => UpdateUserPasswordAsync(t.Result, oldPassword, newPassword), cancellationToken);
++            return _service.PostUsersIDPasswordAsync(userId, new PasswordResetBody(newPassword), null,
++                cancellationToken);
+         }
+ 
+         /// <summary>
+@@ -276,7 +270,7 @@ namespace InfluxDB.Client
+             Arguments.CheckNonEmptyString(clonedName, nameof(clonedName));
+             Arguments.CheckNotNull(user, nameof(user));
+ 
+-            var cloned = new User(name: clonedName);
++            var cloned = new User(clonedName);
+ 
+             return CreateUserAsync(cloned, cancellationToken);
+         }
+@@ -349,24 +343,10 @@ namespace InfluxDB.Client
+             return response._Users;
+         }
+ 
+-        private Task UpdateUserPasswordAsync(string userId, string userName, string oldPassword,
+-            string newPassword, CancellationToken cancellationToken = default)
+-        {
+-            Arguments.CheckNotNull(userId, nameof(userId));
+-            Arguments.CheckNotNull(userName, nameof(userName));
+-            Arguments.CheckNotNull(oldPassword, nameof(oldPassword));
+-            Arguments.CheckNotNull(newPassword, nameof(newPassword));
+-
+-            var header = InfluxDBClient.AuthorizationHeader(userName, oldPassword);
+-
+-            return _service.PostUsersIDPasswordAsync(userId, new PasswordResetBody(newPassword), null, header,
+-                cancellationToken);
+-        }
+-
          private PostUser ToPostUser(User user)
          {
              Enum.TryParse(user.Status.ToString(), true, out PostUser.StatusEnum status);
