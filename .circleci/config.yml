@@ -275,6 +275,9 @@ jobs:
 workflows:
   version: 2
   build:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - generate-client:
           name: generate-python
@@ -307,13 +310,8 @@ workflows:
             - generate-php
 
   nightly:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
+    when:
+      equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - generate-client:
           name: generate-python
