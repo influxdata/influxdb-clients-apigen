@@ -208,6 +208,7 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 		List<CodegenOperation> operationToSplit = operations.stream()
 				.filter(operation -> (operation.produces != null && operation.produces.size() > 1) || operation.operationId.equals("postScriptsIDInvoke"))
 				.filter(operation -> !operation.operationId.equals("postWrite"))
+				.filter(operation -> !operation.path.startsWith("debug/"))
 				.collect(Collectors.toList());
 
 		operationToSplit.forEach(operation -> {
