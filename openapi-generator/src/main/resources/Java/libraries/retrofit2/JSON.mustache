@@ -2,18 +2,6 @@
 
 package {{invokerPackage}};
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonSerializer;
-import com.google.gson.TypeAdapter;
-import com.google.gson.internal.bind.util.ISO8601Utils;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import com.google.gson.JsonElement;
-import io.gsonfire.GsonFireBuilder;
-import io.gsonfire.TypeSelector;
 {{#joda}}
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -26,14 +14,7 @@ import org.threeten.bp.LocalDate;
 import org.threeten.bp.OffsetDateTime;
 import org.threeten.bp.format.DateTimeFormatter;
 {{/threetenbp}}
-
-{{#models.0}}
-import {{modelPackage}}.*;
-{{/models.0}}
-
 import java.io.IOException;
-import java.io.StringReader;
-import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.ParsePosition;
@@ -45,60 +26,51 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 {{/java8}}
 import java.util.Date;
-import java.util.Locale;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.HashMap;
+
+import javax.annotation.Nonnull;
+
+{{#models.0}}
+import {{modelPackage}}.*;
+{{/models.0}}
+import com.influxdb.utils.Arguments;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.internal.bind.util.ISO8601Utils;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 
 public class JSON {
     private Gson gson;
-    private DateTypeAdapter dateTypeAdapter = new DateTypeAdapter();
-    private SqlDateTypeAdapter sqlDateTypeAdapter = new SqlDateTypeAdapter();
-    {{#joda}}
-    private DateTimeTypeAdapter dateTimeTypeAdapter = new DateTimeTypeAdapter();
-    private LocalDateTypeAdapter localDateTypeAdapter = new LocalDateTypeAdapter();
-    {{/joda}}
-    {{#jsr310}}
-    private OffsetDateTimeTypeAdapter offsetDateTimeTypeAdapter = new OffsetDateTimeTypeAdapter();
-    private LocalDateTypeAdapter localDateTypeAdapter = new LocalDateTypeAdapter();
-    {{/jsr310}}
 
     public static GsonBuilder createGson() {
-        GsonFireBuilder fireBuilder = new GsonFireBuilder()
-        {{#models}}{{#model}}{{#discriminator}}  .registerTypeSelector({{classname}}.class, new TypeSelector() {
-            @Override
-            public Class getClassForElement(JsonElement readElement) {
-                Map classByDiscriminatorValue = new HashMap();
+        GsonBuilder builder = new GsonBuilder();
+        {{#models}}{{#model}}{{#discriminator}}
+        builder.registerTypeAdapterFactory(new DiscriminatorAdapter<>({{classname}}.class,
+                new LinkedHashMap<String, Class<? extends {{classname}}>>() {{
                 {{#mappedModels}}
-                classByDiscriminatorValue.put("{{mappingName}}".toUpperCase(Locale.ROOT), {{modelName}}.class);
+                    put("{{mappingName}}", {{modelName}}.class);
                 {{/mappedModels}}
-                classByDiscriminatorValue.put("{{classname}}".toUpperCase(Locale.ROOT), {{classname}}.class);
-                return getClassByDiscriminator(
-                            classByDiscriminatorValue,
-                            getDiscriminatorValue(readElement, "{{{propertyName}}}"));
-            }
-          })
+                }}));
         {{/discriminator}}{{/model}}{{/models}}
-        ;
-        return fireBuilder.createGsonBuilder();
-    }
-
-    private static String getDiscriminatorValue(JsonElement readElement, String discriminatorField) {
-        JsonElement element = readElement.getAsJsonObject().get(discriminatorField);
-        if(null == element) {
-            throw new IllegalArgumentException("missing discriminator field: <" + discriminatorField + ">");
-        }
-        return element.getAsString();
-    }
-
-    private static Class getClassByDiscriminator(Map classByDiscriminatorValue, String discriminatorValue) {
-        Class clazz = (Class) classByDiscriminatorValue.get(discriminatorValue.toUpperCase(Locale.ROOT));
-        if(null == clazz) {
-            throw new IllegalArgumentException("cannot determine model class of name: <" + discriminatorValue + ">");
-        }
-        return clazz;
+        return builder;
     }
 
     public JSON() {
+        DateTypeAdapter dateTypeAdapter = new DateTypeAdapter();
+        SqlDateTypeAdapter sqlDateTypeAdapter = new SqlDateTypeAdapter();
+        OffsetDateTimeTypeAdapter offsetDateTimeTypeAdapter = new OffsetDateTimeTypeAdapter();
+        LocalDateTypeAdapter localDateTypeAdapter = new LocalDateTypeAdapter();
+
         gson = createGson()
             .registerTypeAdapter(Date.class, dateTypeAdapter)
             .registerTypeAdapter(java.sql.Date.class, sqlDateTypeAdapter)
@@ -280,7 +252,7 @@ public class JSON {
                 default:
                     String date = in.nextString();
                     if (date.endsWith("+0000")) {
-                        date = date.substring(0, date.length()-5) + "Z";
+                        date = date.substring(0, date.length() - 5) + "Z";
                     }
                     return OffsetDateTime.parse(date, formatter);
             }
@@ -328,16 +300,6 @@ public class JSON {
         }
     }
 
-    public JSON setOffsetDateTimeFormat(DateTimeFormatter dateFormat) {
-        offsetDateTimeTypeAdapter.setFormat(dateFormat);
-        return this;
-    }
-
-    public JSON setLocalDateFormat(DateTimeFormatter dateFormat) {
-        localDateTypeAdapter.setFormat(dateFormat);
-        return this;
-    }
-
     {{/jsr310}}
     /**
      * Gson TypeAdapter for java.sql.Date type
@@ -349,10 +311,6 @@ public class JSON {
         private DateFormat dateFormat;
 
         public SqlDateTypeAdapter() {
-        }
-
-        public SqlDateTypeAdapter(DateFormat dateFormat) {
-            this.dateFormat = dateFormat;
         }
 
         public void setFormat(DateFormat dateFormat) {
@@ -405,10 +363,6 @@ public class JSON {
         public DateTypeAdapter() {
         }
 
-        public DateTypeAdapter(DateFormat dateFormat) {
-            this.dateFormat = dateFormat;
-        }
-
         public void setFormat(DateFormat dateFormat) {
             this.dateFormat = dateFormat;
         }
@@ -452,14 +406,93 @@ public class JSON {
         }
     }
 
-    public JSON setDateFormat(DateFormat dateFormat) {
-        dateTypeAdapter.setFormat(dateFormat);
-        return this;
-    }
+    @SuppressWarnings("unchecked")
+    static final class DiscriminatorAdapter<T> implements TypeAdapterFactory {
+        private final Class<?> type;
+        private final Map<String, Class<? extends T>> subTypes;
+        private TypeAdapter<?> cachedAdapter;
 
-    public JSON setSqlDateFormat(DateFormat dateFormat) {
-        sqlDateTypeAdapter.setFormat(dateFormat);
-        return this;
-    }
+        DiscriminatorAdapter(@Nonnull final Class<T> type,
+							 @Nonnull final Map<String, Class<? extends T>> subTypes) {
+            Arguments.checkNotNull(type, "type");
+            Arguments.checkNotNull(subTypes, "subTypes");
+            this.type = type;
+            this.subTypes = subTypes;
+        }
 
+        @Override
+        public <R> TypeAdapter<R> create(Gson gson, TypeToken<R> type) {
+            if (type == null) {
+                return null;
+            }
+
+            if (!this.type.isAssignableFrom(type.getRawType())) {
+                return null;
+            }
+
+            if (cachedAdapter == null) {
+                cachedAdapter = new InnerDiscriminatorAdapter<R>(gson).nullSafe();
+            }
+
+            return (TypeAdapter<R>) cachedAdapter;
+        }
+
+        private class InnerDiscriminatorAdapter<R> extends TypeAdapter<R> {
+            private final Gson gson;
+            private final TypeAdapter<JsonElement> jsonAdapter;
+            private final Map<String, TypeAdapter<?>> cachedSubtypesReadAdapters;
+            private final Map<Class<?>, TypeAdapter<?>> cachedSubtypesWriteAdapters;
+
+            InnerDiscriminatorAdapter(@Nonnull final Gson gson) {
+                Arguments.checkNotNull(gson, "gson");
+
+                this.gson = gson;
+                this.jsonAdapter = gson.getAdapter(JsonElement.class);
+                this.cachedSubtypesReadAdapters = new LinkedHashMap<>();
+                this.cachedSubtypesWriteAdapters = new LinkedHashMap<>();
+
+                for (Map.Entry<String, Class<? extends T>> entry : subTypes.entrySet()) {
+                    TypeAdapter<?> adapter = gson.getDelegateAdapter(DiscriminatorAdapter.this,
+                            TypeToken.get(entry.getValue()));
+                    cachedSubtypesReadAdapters.put(entry.getKey(), adapter);
+                    cachedSubtypesWriteAdapters.put(entry.getValue(), adapter);
+                }
+            }
+
+            @Override
+            public R read(JsonReader in) throws IOException {
+                JsonObject json = jsonAdapter.read(in).getAsJsonObject();
+                JsonElement discriminatorJson = json.get("type");
+
+                if (discriminatorJson == null) {
+                    String msg = String.format("Cannot find JSON field 'type' for %s adapter. JSON value: '%s'",
+                            DiscriminatorAdapter.this.type, json);
+                    throw new JsonParseException(msg);
+                }
+
+                String discriminator = discriminatorJson.getAsString();
+                TypeAdapter<R> adapter = (TypeAdapter<R>) cachedSubtypesReadAdapters.get(discriminator);
+                if (adapter == null) {
+                    String msg = String.format("Cannot find model: '%s' for discriminator: '%s'. "
+                            + "The discriminator wasn't registered.", discriminator, DiscriminatorAdapter.this.type);
+                    throw new JsonParseException(msg);
+                }
+                return adapter.fromJsonTree(json);
+            }
+
+            @Override
+            public void write(JsonWriter out, R value) throws IOException {
+                Class<?> outputType = value.getClass();
+                TypeAdapter<R> adapter = (TypeAdapter<R>) cachedSubtypesWriteAdapters.get(outputType);
+
+                if (adapter == null) {
+                    adapter = (TypeAdapter<R>) gson.getDelegateAdapter(DiscriminatorAdapter.this,
+                            TypeToken.get(outputType));
+                    cachedSubtypesWriteAdapters.put(type, adapter);
+                }
+
+                jsonAdapter.write(out, adapter.toJsonTree(value).getAsJsonObject());
+            }
+        }
+    }
 }
