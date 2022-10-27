@@ -97,7 +97,7 @@ jobs:
             - ~/.m2
   check-generated-python:
     docker:
-      - image: "circleci/python:3.7-buster"
+      - image: "cimg/python:3.7"
         environment:
           PIPENV_VENV_IN_PROJECT: true
       - image: "influxdb:latest"
@@ -238,7 +238,7 @@ jobs:
           path: ./build/influxdb-client-java/test-results
   check-generated-php:
     docker:
-      - image: "circleci/php:7.4"
+      - image: "cimg/php:7.4"
         environment:
           PIPENV_VENV_IN_PROJECT: true
       - image: "influxdb:latest"
