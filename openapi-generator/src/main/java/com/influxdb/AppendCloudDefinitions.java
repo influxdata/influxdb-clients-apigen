@@ -45,13 +45,24 @@ public class AppendCloudDefinitions {
         // Add Bucket Explicit Schema API
         {
             LinkedHashMap paths = mapValue(new String[]{"paths"}, oss);
-            for (String pathName : Arrays.asList("/buckets/{bucketID}/schema/measurements", "/buckets/{bucketID}/schema/measurements/{measurementID}")) {
+            List<String> pathNames = Arrays.asList(
+                    "/buckets/{bucketID}/schema/measurements",
+                    "/buckets/{bucketID}/schema/measurements/{measurementID}");
+            for (String pathName : pathNames) {
                 LinkedHashMap path = mapValue(new String[]{"paths", pathName}, cloud);
                 paths.putIfAbsent(pathName, path);
             }
 
             LinkedHashMap schemas = mapValue(new String[]{"components", "schemas"}, oss);
-            for (String schemaName : Arrays.asList("MeasurementSchema", "MeasurementSchemaColumn", "MeasurementSchemaCreateRequest", "MeasurementSchemaList", "MeasurementSchemaUpdateRequest")) {
+            List<String> schemaNames = Arrays.asList(
+                    "MeasurementSchema",
+                    "MeasurementSchemaColumn",
+                    "MeasurementSchemaCreateRequest",
+                    "MeasurementSchemaList",
+                    "MeasurementSchemaUpdateRequest",
+                    "ColumnDataType",
+                    "ColumnDataType");
+            for (String schemaName : schemaNames) {
                 LinkedHashMap schema = mapValue(new String[]{"components", "schemas", schemaName}, cloud);
                 schemas.putIfAbsent(schemaName, schema);
             }
