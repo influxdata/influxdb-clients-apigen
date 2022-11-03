@@ -61,7 +61,7 @@ public class AppendCloudDefinitions {
                     "MeasurementSchemaList",
                     "MeasurementSchemaUpdateRequest",
                     "ColumnDataType",
-                    "ColumnDataType");
+                    "ColumnSemanticType");
             for (String schemaName : schemaNames) {
                 LinkedHashMap schema = mapValue(new String[]{"components", "schemas", schemaName}, cloud);
                 schemas.putIfAbsent(schemaName, schema);
