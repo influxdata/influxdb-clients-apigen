@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.influxdb.AppendCloudDefinitions;
 
 import com.google.common.collect.Lists;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -863,6 +863,17 @@ class PostProcessHelper
 		if (notes != null)
 		{
 			op.notes = notes.trim();
+		}
+	}
+
+	public void postProcessOperationsWithModels(final Map<String, Object> objs) {
+		HashMap operations = AppendCloudDefinitions.mapValue(new String[]{"operations"}, objs);
+		String classname = AppendCloudDefinitions.mapValue(new String[]{"operations", "classname"}, objs);
+
+		if (classname.startsWith("InvokableScripts")) {
+			operations.put("cloudDocLink", "https://docs.influxdata.com/influxdb/cloud/api-guide/api-invokable-scripts/");
+		} else if (classname.startsWith("BucketSchemas")) {
+			operations.put("cloudDocLink", "https://docs.influxdata.com/influxdb/cloud/organizations/buckets/bucket-schema/");
 		}
 	}
 

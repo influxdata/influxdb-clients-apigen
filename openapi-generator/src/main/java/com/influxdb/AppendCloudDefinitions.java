@@ -74,7 +74,7 @@ public class AppendCloudDefinitions {
         LOG.info("Updated: " + args[0]);
     }
 
-    protected static <T> T mapValue(String[] paths, Object object) {
+    public static <T> T mapValue(String[] paths, Object object) {
         if (paths.length == 0) {
             //noinspection unchecked
             return (T) object;

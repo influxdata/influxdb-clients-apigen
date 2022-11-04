@@ -22,7 +22,11 @@ class {{classname}}(_BaseService):
         """{{classname}} - a operation defined in OpenAPI."""
         if api_client is None:
             raise ValueError("Invalid value for `api_client`, must be defined.")
-        self.api_client = api_client
+        self.api_client = api_client{{#cloudDocLink}}
+
+        from influxdb_client.client.warnings import CloudOnlyWarning
+        CloudOnlyWarning.print_warning('{{classname}}',
+                                       '{{{.}}}'){{/cloudDocLink}}
 {{#operation}}
 
     def {{operationId}}(self, {{#sortParamsByRequiredFlag}}{{#allParams}}{{#required}}{{paramName}}, {{/required}}{{/allParams}}{{/sortParamsByRequiredFlag}}**kwargs):  # noqa: E501,D401,D403
