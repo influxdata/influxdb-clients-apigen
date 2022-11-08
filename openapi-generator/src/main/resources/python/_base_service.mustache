@@ -4,7 +4,7 @@
 class _BaseService(object):
 
     def __init__(self, api_client=None):
-        """BaseService with common services operations"""
+        """Init common services operation."""
         if api_client is None:
             raise ValueError("Invalid value for `api_client`, must be defined.")
         self.api_client = api_client
