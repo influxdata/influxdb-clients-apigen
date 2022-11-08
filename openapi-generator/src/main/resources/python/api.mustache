@@ -77,9 +77,13 @@ class {{classname}}(_BaseService):
         :return: {{#returnType}}{{returnType}}{{/returnType}}{{^returnType}}None{{/returnType}}
                  If the method is called asynchronously,
                  returns the request thread.
-        """  # noqa: E501
+        """  # noqa: E501{{#cloudDocLink}}
+        if not self._is_cloud_instance():
+            from influxdb_client.client.warnings import CloudOnlyWarning
+            CloudOnlyWarning.print_warning('{{classname}}',
+                                           '{{{.}}}')  # noqa: E501{{/cloudDocLink}}
         local_var_params, path_params, query_params, header_params, body_params = \
-            self._{{operationId}}_prepare({{#sortParamsByRequiredFlag}}{{#allParams}}{{#required}}{{paramName}}, {{/required}}{{/allParams}}{{/sortParamsByRequiredFlag}}**kwargs)
+            self._{{operationId}}_prepare({{#sortParamsByRequiredFlag}}{{#allParams}}{{#required}}{{paramName}}, {{/required}}{{/allParams}}{{/sortParamsByRequiredFlag}}**kwargs)  # noqa: E501
 
         return self.api_client.call_api(
             '{{{path}}}', '{{httpMethod}}',
@@ -113,9 +117,13 @@ class {{classname}}(_BaseService):
         :return: {{#returnType}}{{returnType}}{{/returnType}}{{^returnType}}None{{/returnType}}
                  If the method is called asynchronously,
                  returns the request thread.
-        """  # noqa: E501
+        """  # noqa: E501{{#cloudDocLink}}
+        if not await self._is_cloud_instance_async():
+            from influxdb_client.client.warnings import CloudOnlyWarning
+            CloudOnlyWarning.print_warning('{{classname}}',
+                                           '{{{.}}}')  # noqa: E501{{/cloudDocLink}}
         local_var_params, path_params, query_params, header_params, body_params = \
-            self._{{operationId}}_prepare({{#sortParamsByRequiredFlag}}{{#allParams}}{{#required}}{{paramName}}, {{/required}}{{/allParams}}{{/sortParamsByRequiredFlag}}**kwargs)
+            self._{{operationId}}_prepare({{#sortParamsByRequiredFlag}}{{#allParams}}{{#required}}{{paramName}}, {{/required}}{{/allParams}}{{/sortParamsByRequiredFlag}}**kwargs)  # noqa: E501
 
         return await self.api_client.call_api(
             '{{{path}}}', '{{httpMethod}}',
