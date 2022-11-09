@@ -76,6 +76,32 @@ index 79f4b06..a1921fd 100644
                  .ContinueWith(t => t.Result._Scripts, cancellationToken);
          }
  
+diff --git a/Client/TasksApi.cs b/Client/TasksApi.cs
+index 98c4276..0993046 100644
+--- a/Client/TasksApi.cs
++++ b/Client/TasksApi.cs
+@@ -531,8 +531,8 @@ namespace InfluxDB.Client
+             Arguments.CheckNotNull(task, nameof(task));
+ 
+             var status = (TaskStatusType)Enum.Parse(typeof(TaskStatusType), task.Status.ToString());
+-            var taskCreateRequest = new TaskCreateRequest(task.OrgID, task.Org, status,
+-                task.Flux, task.Description);
++            var taskCreateRequest = new TaskCreateRequest(orgID: task.OrgID, org: task.Org, status: status,
++                flux: task.Flux, description: task.Description);
+ 
+             return CreateTaskAsync(taskCreateRequest, cancellationToken);
+         }
+@@ -733,8 +733,8 @@ namespace InfluxDB.Client
+             Arguments.CheckNotNull(task, nameof(task));
+ 
+             var status = (TaskStatusType)Enum.Parse(typeof(TaskStatusType), task.Status.ToString());
+-            var cloned = new TaskCreateRequest(task.OrgID, task.Org, status,
+-                task.Flux, task.Description);
++            var cloned = new TaskCreateRequest(orgID: task.OrgID, org: task.Org, status: status,
++                flux: task.Flux, description: task.Description);
+ 
+             var created = await CreateTaskAsync(cloned, cancellationToken).ConfigureAwait(false);
+             var labels = await GetLabelsAsync(task, cancellationToken).ConfigureAwait(false);
 diff --git a/Client/UsersApi.cs b/Client/UsersApi.cs
 index bb4899a..a5a920e 100644
 --- a/Client/UsersApi.cs
@@ -192,3 +218,34 @@ index bb4899a..a5a920e 100644
              return postUser;
          }
      }
+diff --git a/Client/WriteApiAsync.cs b/Client/WriteApiAsync.cs
+index b64249c..0483f75 100644
+--- a/Client/WriteApiAsync.cs
++++ b/Client/WriteApiAsync.cs
+@@ -415,9 +415,9 @@ namespace InfluxDB.Client
+                 return Task.CompletedTask;
+             }
+ 
+-            return _service.PostWriteAsync(org, bucket, Encoding.UTF8.GetBytes(sb.ToString()), null,
+-                PostHeaderEncoding, PostHeaderContentType, null, PostHeaderAccept, null, precision,
+-                cancellationToken);
++            return _service.PostWriteAsync(org: org, bucket: bucket, body: Encoding.UTF8.GetBytes(sb.ToString()),
++                contentEncoding: PostHeaderEncoding, contentType: PostHeaderContentType, accept: PostHeaderAccept,
++                precision: precision, cancellationToken: cancellationToken);
+         }
+ 
+         private Task<RestResponse> WriteDataAsyncWithIRestResponse(IEnumerable<BatchWriteData> batch,
+@@ -433,9 +433,10 @@ namespace InfluxDB.Client
+ 
+             var sb = ToLineProtocolBody(batch);
+ 
+-            return _service.PostWriteAsyncWithIRestResponse(org, bucket, Encoding.UTF8.GetBytes(sb.ToString()), null,
+-                PostHeaderEncoding, PostHeaderContentType, null, PostHeaderAccept, null, precision,
+-                cancellationToken);
++            return _service.PostWriteAsyncWithIRestResponse(org: org, bucket: bucket,
++                body: Encoding.UTF8.GetBytes(sb.ToString()), contentEncoding: PostHeaderEncoding,
++                contentType: PostHeaderContentType, accept: PostHeaderAccept, precision: precision,
++                cancellationToken: cancellationToken);
+         }
+ 
+         private static StringBuilder ToLineProtocolBody(IEnumerable<BatchWriteData> data)
