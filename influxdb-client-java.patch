@@ -25,6 +25,19 @@ index 8da414e64f..1bf4c843f0 100644
                              @Nonnull final String newPassword);
  
      /**
+diff --git a/client/src/main/java/com/influxdb/client/internal/AuthorizationsApiImpl.java b/client/src/main/java/com/influxdb/client/internal/AuthorizationsApiImpl.java
+index f658bc6a4a..b9d9e683aa 100644
+--- a/client/src/main/java/com/influxdb/client/internal/AuthorizationsApiImpl.java
++++ b/client/src/main/java/com/influxdb/client/internal/AuthorizationsApiImpl.java
+@@ -234,7 +234,7 @@ final class AuthorizationsApiImpl extends AbstractRestClient implements Authoriz
+                                                    @Nullable final String userName,
+                                                    @Nullable final String orgID) {
+ 
+-        Call<Authorizations> authorizationsCall = service.getAuthorizations(null, userID, userName, orgID, null);
++        Call<Authorizations> authorizationsCall = service.getAuthorizations(null, userID, userName, orgID, null, null);
+ 
+         Authorizations authorizations = execute(authorizationsCall);
+         LOG.log(Level.FINEST, "findAuthorizations found: {0}", authorizations);
 diff --git a/client/src/main/java/com/influxdb/client/internal/InvokableScriptsApiImpl.java b/client/src/main/java/com/influxdb/client/internal/InvokableScriptsApiImpl.java
 index 8f66707f70..cd96ad47ad 100644
 --- a/client/src/main/java/com/influxdb/client/internal/InvokableScriptsApiImpl.java
@@ -117,10 +130,10 @@ index b841ac27c2..e6d2c5054a 100644
  }
 \ No newline at end of file
 diff --git a/client/src/test/java/com/influxdb/client/ITUsersApi.java b/client/src/test/java/com/influxdb/client/ITUsersApi.java
-index 50ecf32fb8..4397397dd9 100644
+index 1456cd2ae6..71aa8acdc2 100644
 --- a/client/src/test/java/com/influxdb/client/ITUsersApi.java
 +++ b/client/src/test/java/com/influxdb/client/ITUsersApi.java
-@@ -122,13 +122,14 @@ class ITUsersApi extends AbstractITClientTest {
+@@ -119,13 +119,14 @@ class ITUsersApi extends AbstractITClientTest {
      void updateUser() {
  
          User createdUser = usersApi.createUser(generateName("John Ryzen"));
@@ -137,7 +150,7 @@ index 50ecf32fb8..4397397dd9 100644
      }
  
      @Test
-@@ -169,51 +170,37 @@ class ITUsersApi extends AbstractITClientTest {
+@@ -166,51 +167,37 @@ class ITUsersApi extends AbstractITClientTest {
      }
  
      @Test

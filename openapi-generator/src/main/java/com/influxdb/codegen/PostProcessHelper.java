@@ -338,10 +338,10 @@ class PostProcessHelper
 			});
 		}
 
-		//
-		// Authorization header for operation with Basic Security
-		//
 		{
+			//
+			// Authorization header for operation with Basic Security
+			//
 			openAPI.getPaths().forEach((path, pathItem) -> {
 				pathItem
 						.readOperations().stream().filter(operation -> operation != null && operation.getSecurity() != null && !operation.getSecurity().isEmpty()).forEach(operation -> {
@@ -367,6 +367,15 @@ class PostProcessHelper
 								}
 							}
 						});
+
+				//
+				// Keep Authorization API name to 'Authorizations'
+				//
+				for (Operation operation : pathItem.readOperations()) {
+					operation
+							.getTags()
+							.replaceAll(tag -> tag.replace("Authorizations (API tokens)", "Authorizations"));
+				}
 			});
 		}
 
@@ -408,6 +417,8 @@ class PostProcessHelper
 			StringSchema type = (StringSchema) telegrafPlugin.getProperties().get("type");
 			type._enum(Arrays.asList("input", "output"));
 		}
+
+//		openAPI.getTags().get(0).setName("Authorizations");
 
 		//
 		// Trim description
