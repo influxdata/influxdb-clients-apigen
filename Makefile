@@ -79,6 +79,7 @@ generate-python:
 	@docker-compose run download-invocable-scripts
 	@docker-compose run java mvn -f ./openapi-generator/pom.xml compile exec:java -Dexec.mainClass="com.influxdb.MergeContracts" -Dexec.args="oss.yml invocable-scripts.yml"
 	@docker-compose run java mvn -f ./openapi-generator/pom.xml compile exec:java -Dexec.mainClass="com.influxdb.AppendCloudDefinitions" -Dexec.args="oss.yml cloud.yml"
+	@docker-compose run java mvn -f ./openapi-generator/pom.xml compile exec:java -Dexec.mainClass="com.influxdb.AppendCloudDefinitions" -Dexec.args="oss.yml cloud.yml"
 	@docker-compose run java ./generate-python.sh
 
 check-python:

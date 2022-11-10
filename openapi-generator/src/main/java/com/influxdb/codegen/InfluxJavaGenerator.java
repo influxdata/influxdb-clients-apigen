@@ -197,6 +197,7 @@ public class InfluxJavaGenerator extends JavaClientCodegen implements InfluxGene
 															   final List<Object> allModels)
 	{
 		Map<String, Object> operationsWithModels = super.postProcessOperationsWithModels(objs, allModels);
+		postProcessHelper.postProcessOperationsWithModels(operationsWithModels);
 
 		List<CodegenOperation> operations = (List<CodegenOperation>) ((HashMap) operationsWithModels
 				.get("operations"))

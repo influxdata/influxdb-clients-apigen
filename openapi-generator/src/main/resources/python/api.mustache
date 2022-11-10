@@ -20,9 +20,7 @@ class {{classname}}(_BaseService):
 
     def __init__(self, api_client=None):  # noqa: E501,D401,D403
         """{{classname}} - a operation defined in OpenAPI."""
-        if api_client is None:
-            raise ValueError("Invalid value for `api_client`, must be defined.")
-        self.api_client = api_client
+        super().__init__(api_client)
 {{#operation}}
 
     def {{operationId}}(self, {{#sortParamsByRequiredFlag}}{{#allParams}}{{#required}}{{paramName}}, {{/required}}{{/allParams}}{{/sortParamsByRequiredFlag}}**kwargs):  # noqa: E501,D401,D403
@@ -79,9 +77,13 @@ class {{classname}}(_BaseService):
         :return: {{#returnType}}{{returnType}}{{/returnType}}{{^returnType}}None{{/returnType}}
                  If the method is called asynchronously,
                  returns the request thread.
-        """  # noqa: E501
+        """  # noqa: E501{{#cloudDocLink}}
+        if not self._is_cloud_instance():
+            from influxdb_client.client.warnings import CloudOnlyWarning
+            CloudOnlyWarning.print_warning('{{classname}}',
+                                           '{{{.}}}')  # noqa: E501{{/cloudDocLink}}
         local_var_params, path_params, query_params, header_params, body_params = \
-            self._{{operationId}}_prepare({{#sortParamsByRequiredFlag}}{{#allParams}}{{#required}}{{paramName}}, {{/required}}{{/allParams}}{{/sortParamsByRequiredFlag}}**kwargs)
+            self._{{operationId}}_prepare({{#sortParamsByRequiredFlag}}{{#allParams}}{{#required}}{{paramName}}, {{/required}}{{/allParams}}{{/sortParamsByRequiredFlag}}**kwargs)  # noqa: E501
 
         return self.api_client.call_api(
             '{{{path}}}', '{{httpMethod}}',
@@ -115,9 +117,13 @@ class {{classname}}(_BaseService):
         :return: {{#returnType}}{{returnType}}{{/returnType}}{{^returnType}}None{{/returnType}}
                  If the method is called asynchronously,
                  returns the request thread.
-        """  # noqa: E501
+        """  # noqa: E501{{#cloudDocLink}}
+        if not await self._is_cloud_instance_async():
+            from influxdb_client.client.warnings import CloudOnlyWarning
+            CloudOnlyWarning.print_warning('{{classname}}',
+                                           '{{{.}}}')  # noqa: E501{{/cloudDocLink}}
         local_var_params, path_params, query_params, header_params, body_params = \
-            self._{{operationId}}_prepare({{#sortParamsByRequiredFlag}}{{#allParams}}{{#required}}{{paramName}}, {{/required}}{{/allParams}}{{/sortParamsByRequiredFlag}}**kwargs)
+            self._{{operationId}}_prepare({{#sortParamsByRequiredFlag}}{{#allParams}}{{#required}}{{paramName}}, {{/required}}{{/allParams}}{{/sortParamsByRequiredFlag}}**kwargs)  # noqa: E501
 
         return await self.api_client.call_api(
             '{{{path}}}', '{{httpMethod}}',

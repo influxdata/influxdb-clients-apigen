@@ -104,6 +104,15 @@ public class InfluxPythonGenerator extends PythonClientCodegen implements Influx
     }
 
 	@Override
+	public Map<String, Object> postProcessOperationsWithModels(final Map<String, Object> objs,
+															   final List<Object> allModels) {
+		Map<String, Object> operationsWithModels = super.postProcessOperationsWithModels(objs, allModels);
+		postProcessHelper.postProcessOperationsWithModels(operationsWithModels);
+
+		return operationsWithModels;
+	}
+
+	@Override
 	public String escapeText(String input) {
 		if (input == null) {
 			return null;
