@@ -22,4 +22,4 @@ mkdir -p ./build/influxdb-client-php/src/InfluxDB2/Service
 cp -r ./build/influxdb-client-php/generated/lib/Service/*.php ./build/influxdb-client-php/src/InfluxDB2/Service
 cp -r ./build/influxdb-client-php/generated/lib/Model/*.php ./build/influxdb-client-php/src/InfluxDB2/Model
 
-#rm -rf ./build/influxdb-client-php/generated
+rm -rf ./build/influxdb-client-php/generated
