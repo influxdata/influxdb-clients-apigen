@@ -47,7 +47,7 @@ index 8f66707f70..cd96ad47ad 100644
          Arguments.checkNotNull(query, "query");
  
 -        Call<Scripts> call = service.getScripts(query.getLimit(), query.getOffset());
-+        Call<Scripts> call = service.getScripts(query.getLimit(), query.getOffset(), null, null, null);
++        Call<Scripts> call = service.getScripts(query.getOffset(), query.getLimit(), null);
  
          return execute(call).getScripts();
      }
