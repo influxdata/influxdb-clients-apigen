@@ -7,26 +7,26 @@
 from __future__ import absolute_import
 
 # import apis into sdk package
-{{#apiInfo}}{{#apis}}from {{apiPackage}}.{{classVarName}} import {{classname}}
+{{#apiInfo}}{{#apis}}from {{apiPackage}}.{{classVarName}} import {{classname}} as {{classname}}
 {{/apis}}{{/apiInfo}}
-from {{packageName}}.configuration import Configuration
+from {{packageName}}.configuration import Configuration as Configuration
 # import models into sdk package
-{{#models}}{{#model}}from {{modelPackage}}.{{classFilename}} import {{classname}}
+{{#models}}{{#model}}from {{modelPackage}}.{{classFilename}} import {{classname}} as {{classname}}
 {{/model}}{{/models}}
-from influxdb_client.client.authorizations_api import AuthorizationsApi
-from influxdb_client.client.bucket_api import BucketsApi
-from influxdb_client.client.delete_api import DeleteApi
-from influxdb_client.client.invokable_scripts_api import InvokableScriptsApi
-from influxdb_client.client.labels_api import LabelsApi
-from influxdb_client.client.organizations_api import OrganizationsApi
-from influxdb_client.client.query_api import QueryApi
-from influxdb_client.client.tasks_api import TasksApi
-from influxdb_client.client.users_api import UsersApi
-from influxdb_client.client.write_api import WriteApi, WriteOptions
-from influxdb_client.client.influxdb_client import InfluxDBClient
-from influxdb_client.client.logging_handler import InfluxLoggingHandler
-from influxdb_client.client.write.point import Point
+from influxdb_client.client.authorizations_api import AuthorizationsApi as AuthorizationsApi
+from influxdb_client.client.bucket_api import BucketsApi as BucketsApi
+from influxdb_client.client.delete_api import DeleteApi as DeleteApi
+from influxdb_client.client.invokable_scripts_api import InvokableScriptsApi as InvokableScriptsApi
+from influxdb_client.client.labels_api import LabelsApi as LabelsApi
+from influxdb_client.client.organizations_api import OrganizationsApi as OrganizationsApi
+from influxdb_client.client.query_api import QueryApi as QueryApi
+from influxdb_client.client.tasks_api import TasksApi as TasksApi
+from influxdb_client.client.users_api import UsersApi as UsersApi
+from influxdb_client.client.write_api import WriteApi as WriteApi, WriteOptions as WriteOptions
+from influxdb_client.client.influxdb_client import InfluxDBClient as InfluxDBClient
+from influxdb_client.client.logging_handler import InfluxLoggingHandler as InfluxLoggingHandler
+from influxdb_client.client.write.point import Point as Point
 
-from influxdb_client.version import VERSION
+from influxdb_client.version import VERSION as VERSION
 
 __version__ = VERSION

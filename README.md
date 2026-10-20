@@ -36,3 +36,17 @@ Supported are following client libraries:
 1. `make generate-all` - generate new API stubs from `./swagger.yml` for all client libraries 
 1. optionaly `make check-all` will try to compile and run tests for all client libraries
 1. `make pr-java`, `make pr-csharp`, `make pr-python`, `make pr-php` will create PR into specific client library
+
+#### Check Python public exports
+
+After regenerating the Python client, install it and mypy into a Python virtual
+environment, then run the public-import regression from this repository:
+
+```sh
+python -m pip install -e ./build/influxdb-client-python mypy
+python -m mypy --no-implicit-reexport --follow-imports=silent tests/python_exports.py
+python tests/python_exports.py
+```
+
+This checks that generated services and models, and the handwritten client API,
+remain importable from `influxdb_client` when implicit re-exports are disabled.
